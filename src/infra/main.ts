@@ -1,4 +1,3 @@
-// import 'newrelic';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { EnvService } from './env/env.service';
@@ -9,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {});
   const configService = app.get(EnvService);
 
-  app.setGlobalPrefix('/soterme/api');
+  app.setGlobalPrefix('banking-ledger');
 
   app.enableCors({
     origin: true,
@@ -22,7 +21,7 @@ async function bootstrap() {
   patchNestJsSwagger();
   const config = new DocumentBuilder()
     .addBearerAuth()
-    .setTitle('Soterme API')
+    .setTitle('Banking Ledger API')
     .setDescription('api em desenvolvimento')
     .setVersion('1.0.0')
     .build();
@@ -33,7 +32,6 @@ async function bootstrap() {
   });
 
   const port = configService.get('PORT');
-
   await app.listen(port);
 }
 bootstrap();
