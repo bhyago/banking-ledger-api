@@ -1,0 +1,12 @@
+model Account {
+  id               String    @id @default(ulid())
+  number           String    @unique
+  balanceCents     BigInt    @default(0) @map("balance_cents") @db.BigInt
+  creditLimitCents BigInt    @default(0) @map("credit_limit_cents") @db.BigInt
+  createdAt        DateTime  @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+
+  @@index([id], name: "idx_account_id")
+  @@map("account")
+}
