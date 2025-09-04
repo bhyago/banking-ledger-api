@@ -1,0 +1,17 @@
+model LedgerEntry {
+  id                String   @id @default(ulid())
+  accountId         String   @map("account_id")
+  account           Account  @relation(fields: [accountId], references: [id])
+  transactionId     String?  @map("transaction_id")
+  transferId        String?  @map("transfer_id")
+  debitCents        BigInt   @default(0) @map("debit_cents") @db.BigInt
+  creditCents       BigInt   @default(0) @map("credit_cents") @db.BigInt
+  balanceAfterCents BigInt   @map("balance_after_cents") @db.BigInt
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  transfer    Transfer?    @relation(fields: [transferId], references: [id])
+
+  @@index([accountId, createdAt], name: "idx_ledger_account_created_at")
+  @@map("ledger_entry")
+}

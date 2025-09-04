@@ -7,6 +7,11 @@ model Account {
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
 
+  transactions  Transaction[]
+  ledger        LedgerEntry[]
+  transfersFrom Transfer[]    @relation("FromAccount")
+  transfersTo   Transfer[]    @relation("ToAccount")
+
   @@index([id], name: "idx_account_id")
   @@map("account")
 }
