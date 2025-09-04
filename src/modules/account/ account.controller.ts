@@ -2,8 +2,12 @@ import { Controller, Post, HttpCode, Get, Param } from '@nestjs/common';
 import { CreateAccountUseCase } from './usecases/create-account';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { createAccountDTO } from './dtos/create-account';
-import { getAccountByIdDTO } from './dtos/get-account-by-id';
+import {
+  getAccountByIdDTO,
+  getAccountByIdSchemaValidation,
+} from './dtos/get-account-by-id';
 import { GetAccountByIdUseCase } from './usecases/get-account-by-id';
+import { ZodValidationPipe } from 'nestjs-zod';
 
 @ApiTags('account')
 @Controller('account')
@@ -30,8 +34,9 @@ export class AccountController {
     type: getAccountByIdDTO.Output,
   })
   async getAccountById(
-    @Param('id') accountId: string,
+    @Param(new ZodValidationPipe(getAccountByIdSchemaValidation.params))
+    param: getAccountByIdDTO.ParamsDTO,
   ): Promise<getAccountByIdDTO.Output> {
-    return this.getAccountByIdUseCase.execute({ accountId });
+    return this.getAccountByIdUseCase.execute({ accountId: param.accountId });
   }
 }

@@ -1,4 +1,5 @@
 import { SchemaValidation } from '@/common/schema-validation-type';
+import { ApiProperty } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
@@ -14,7 +15,15 @@ export const getAccountByIdSchemaValidation = {
   }),
 } satisfies SchemaValidation;
 
+type GetAccountByIdParamsDTO = z.infer<
+  typeof getAccountByIdSchemaValidation.params
+>;
+
 export namespace getAccountByIdDTO {
+  export class ParamsDTO implements GetAccountByIdParamsDTO {
+    @ApiProperty({ required: true })
+    accountId!: string;
+  }
   export class Input extends createZodDto(
     getAccountByIdSchemaValidation.params,
   ) {}
