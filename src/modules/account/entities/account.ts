@@ -46,12 +46,17 @@ export class Account extends Entity<AccountProps> {
     return account;
   }
 
+  private touch() {
+    this.props.updatedAt = DateTime.utc().toJSDate();
+  }
+
   get number(): string {
     return this.props.number;
   }
 
   set number(value: string) {
     this.props.number = value;
+    this.touch();
   }
 
   get creditLimit(): number {
@@ -60,6 +65,7 @@ export class Account extends Entity<AccountProps> {
 
   set creditLimit(value: number) {
     this.props.creditLimit = value;
+    this.touch();
   }
 
   get balance(): number {
@@ -68,6 +74,7 @@ export class Account extends Entity<AccountProps> {
 
   set balance(value: number) {
     this.props.balance = value;
+    this.touch();
   }
 
   get createdAt(): Date {
@@ -76,6 +83,7 @@ export class Account extends Entity<AccountProps> {
 
   set createdAt(value: Date) {
     this.props.createdAt = value;
+    this.touch();
   }
 
   get updatedAt(): Date {
@@ -84,6 +92,7 @@ export class Account extends Entity<AccountProps> {
 
   set updatedAt(value: Date) {
     this.props.updatedAt = value;
+    this.touch();
   }
 
   get deletedAt(): Date | null {
@@ -92,5 +101,6 @@ export class Account extends Entity<AccountProps> {
 
   set deletedAt(value: Date | null) {
     this.props.deletedAt = value;
+    this.touch();
   }
 }
