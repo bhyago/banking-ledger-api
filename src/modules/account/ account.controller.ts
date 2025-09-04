@@ -1,4 +1,11 @@
-import { Controller, Post, HttpCode, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  HttpCode,
+  Get,
+  Param,
+  HttpStatus,
+} from '@nestjs/common';
 import { CreateAccountUseCase } from './usecases/create-account';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { createAccountDTO } from './dtos/create-account';
@@ -18,9 +25,9 @@ export class AccountController {
   ) {}
 
   @Post()
-  @HttpCode(201)
+  @HttpCode(HttpStatus.CREATED)
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     type: createAccountDTO.Output,
   })
   async createAccount(): Promise<createAccountDTO.Output> {
@@ -28,9 +35,9 @@ export class AccountController {
   }
 
   @Get(':id')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     type: getAccountByIdDTO.Output,
   })
   async getAccountById(
