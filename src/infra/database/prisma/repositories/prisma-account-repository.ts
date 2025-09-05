@@ -7,12 +7,14 @@ import { PrismaAccountMapper } from '../mappers/account-mapper';
 @Injectable()
 export class PrismaAccountRepository implements AccountRepository {
   constructor(private prisma: PrismaService) {}
-  findById(input: { accountId: string }): Promise<Account | null> {
-    throw new Error('Method not implemented.');
+  async findById(input: { accountId: string }): Promise<Account | null> {
+    const account = await this.prisma.account.findUnique({
+      where: { id: input.accountId },
+    });
+    if (!account) return null;
+    return PrismaAccountMapper.toDomain(account);
   }
-  findAccountLedger(input: { accountId: string }): Promise<Account | null> {
-    throw new Error('Method not implemented.');
-  }
+
   async save(input: Account): Promise<{ id: string }> {
     const account = await this.prisma.account.create({
       data: PrismaAccountMapper.toPrisma(input),
@@ -21,5 +23,12 @@ export class PrismaAccountRepository implements AccountRepository {
     return {
       id: account.id,
     };
+  }
+
+  async update(input: Account): Promise<void> {
+    await this.prisma.account.update({
+      where: { id: input.id.toValue() },
+      data: PrismaAccountMapper.toPrisma(input),
+    });
   }
 }

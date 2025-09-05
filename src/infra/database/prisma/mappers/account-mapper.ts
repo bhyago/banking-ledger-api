@@ -4,16 +4,23 @@ import { Account } from '@/modules/account/entities/account';
 
 export class PrismaAccountMapper {
   static toDomain(prisma: AccountPrisma): Account {
-    return Account.create({
-      deletedAt: prisma.deletedAt,
-    });
+    const id = new UniqueEntityID(prisma.id);
+    const props = {
+      number: prisma.number,
+      balance: Number(prisma.balanceCents) / 100,
+      creditLimit: Number(prisma.creditLimitCents) / 100,
+      createdAt: prisma.createdAt,
+      updatedAt: prisma.updatedAt,
+      deletedAt: prisma.deletedAt ?? null,
+    } as const;
+    return Account.restore(props, id);
   }
 
   static toPrisma(domain: Account): Prisma.AccountCreateInput {
     return {
       number: domain.number,
-      balanceCents: domain.balance * 100,
-      creditLimitCents: domain.creditLimit * 100,
+      balanceCents: BigInt(Math.round(domain.balance * 100)),
+      creditLimitCents: BigInt(Math.round(domain.creditLimit * 100)),
       deletedAt: domain.deletedAt,
       updatedAt: domain.updatedAt,
       createdAt: domain.createdAt,
