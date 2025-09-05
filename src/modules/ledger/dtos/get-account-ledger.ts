@@ -41,10 +41,6 @@ export const getAccountLedgerSchemaValidation = {
   }),
 } satisfies SchemaValidation;
 
-const InputSchema = getAccountLedgerSchemaValidation.params.merge(
-  getAccountLedgerSchemaValidation.queryParams,
-);
-
 export namespace getAccountLedgerDTO {
   export class ParamDTO extends createZodDto(
     getAccountLedgerSchemaValidation.params,
@@ -53,7 +49,11 @@ export namespace getAccountLedgerDTO {
     getAccountLedgerSchemaValidation.queryParams,
   ) {}
 
-  export class Input extends createZodDto(InputSchema) {}
+  export class Input extends createZodDto(
+    getAccountLedgerSchemaValidation.params.merge(
+      getAccountLedgerSchemaValidation.queryParams,
+    ),
+  ) {}
 
   export class Output extends createZodDto(
     getAccountLedgerSchemaValidation.response,
