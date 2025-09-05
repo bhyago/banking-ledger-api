@@ -7,7 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { CreateAccountUseCase } from './usecases/create-account';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { createAccountDTO } from './dtos/create-account';
 import {
   getAccountByIdDTO,
@@ -26,8 +26,12 @@ export class AccountController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiResponse({
-    status: HttpStatus.CREATED,
+  @ApiOperation({
+    summary: 'Criar conta',
+    description: 'Cria uma nova conta e retorna seu identificador.',
+  })
+  @ApiCreatedResponse({
+    description: 'Conta criada com sucesso',
     type: createAccountDTO.Output,
   })
   async createAccount(): Promise<createAccountDTO.Output> {
@@ -36,9 +40,9 @@ export class AccountController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: getAccountByIdDTO.Output,
+  @ApiOperation({
+    summary: 'Buscar conta por ID',
+    description: 'Recupera os dados de uma conta existente pelo seu ID.',
   })
   async getAccountById(
     @Param(new ZodValidationPipe(getAccountByIdSchemaValidation.params))
