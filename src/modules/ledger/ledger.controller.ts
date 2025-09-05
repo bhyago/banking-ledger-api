@@ -31,7 +31,7 @@ export class LedgerController {
   @ApiResponse({ status: HttpStatus.OK, type: getAccountLedgerDTO.Output })
   async getLedger(
     @Param(new ZodValidationPipe(getAccountLedgerSchemaValidation.params))
-    param: getAccountLedgerDTO.Input,
+    param: getAccountLedgerDTO.ParamDTO,
     @Query(new ZodValidationPipe(getAccountLedgerSchemaValidation.queryParams))
     query: getAccountLedgerDTO.QueryDTO,
   ): Promise<getAccountLedgerDTO.Output> {
