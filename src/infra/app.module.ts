@@ -4,6 +4,7 @@ import { envSchema } from './env/env';
 import { EnvModule } from './env/env.module';
 import { AccountModule } from '@/modules/account/account.module';
 import { LedgerModule } from '@/modules/ledger/ledger.module';
+import { TransactionModule } from '@/modules/transaction/transaction.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { LedgerModule } from '@/modules/ledger/ledger.module';
     EnvModule,
     AccountModule,
     LedgerModule,
+    TransactionModule,
   ],
 })
 export class AppModule {}

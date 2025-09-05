@@ -45,6 +45,9 @@ export class Account extends Entity<AccountProps> {
     );
     return account;
   }
+  static restore(props: AccountProps, id: UniqueEntityID) {
+    return new Account(props, id);
+  }
 
   private touch() {
     this.props.updatedAt = DateTime.utc().toJSDate();

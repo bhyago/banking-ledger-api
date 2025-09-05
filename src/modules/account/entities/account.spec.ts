@@ -27,20 +27,29 @@ describe('Account Entity', () => {
     expect(account.deletedAt).toEqual(new Date('2025-09-03T00:00:00Z'));
   });
 
-  it('should update updatedAt when touch is called', () => {
+  it('should update updatedAt when a property changes', () => {
     const account = Account.create({});
     const oldUpdatedAt = account.updatedAt;
-    account['touch']();
+    account.balance = account.balance + 1; // triggers touch()
     expect(account.updatedAt.getTime()).toBeGreaterThanOrEqual(
       oldUpdatedAt.getTime(),
     );
   });
 
-  it('should generate account number from id', () => {
+  it('should generate account number from id (stable for same id)', () => {
     const ulidId = ulid();
     const id = new UniqueEntityID(ulidId);
 
-    const account = Account.create({}, id);
-    expect(account.number).toBeTypeOf('string');
+    const a1 = Account.create({}, id);
+    const a2 = Account.create({}, id);
+    expect(a1.number).toBeTypeOf('string');
+    expect(a2.number).toBe(a1.number);
+  });
+
+  it('should likely produce different numbers for different ids', () => {
+    const a1 = Account.create({}, new UniqueEntityID(ulid()));
+    const a2 = Account.create({}, new UniqueEntityID(ulid()));
+    // Not guaranteed, but extremely likely with different ULIDs
+    expect(a1.number).not.toBe(a2.number);
   });
 });
