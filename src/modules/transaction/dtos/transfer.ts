@@ -38,8 +38,6 @@ export namespace transferDTO {
     @ApiProperty({ required: false })
     description?: string;
   }
-  export class Input extends createZodDto(
-    transferSchemaValidation.body.merge(transferSchemaValidation.headers),
-  ) {}
+  export class Input extends createZodDto(transferSchemaValidation.body) {}
   export class Output extends createZodDto(transferSchemaValidation.response) {}
 }

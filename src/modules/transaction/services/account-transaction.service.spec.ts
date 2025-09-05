@@ -5,6 +5,7 @@ import { AccountRepository } from '@/modules/account/repositories/account-reposi
 import { TransactionRepository } from '../repositories/transaction-repository';
 import { LedgerRepository } from '../repositories/ledger-repository';
 import { FeePolicyRepository } from '../repositories/fee-policy-repository';
+import { TransferRepository } from '../repositories/transfer-repository';
 import { Account } from '@/modules/account/entities/account';
 import { Transaction } from '../entities/transaction';
 import { LedgerEntry } from '../entities/ledger-entry';
@@ -13,6 +14,7 @@ import { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { accountErrors } from '@/modules/account/errors/account-errors';
 import { FeePolicy } from '../entities/fee-policy';
 import { transactionErrors } from '../errors/transaction-errors';
+import { Transfer } from '../entities/transfer';
 
 const makeUow = () =>
   ({
@@ -43,12 +45,18 @@ const makeFeePolicyRepository = () =>
     findActiveByType: vi.fn(),
   }) as unknown as FeePolicyRepository;
 
+const makeTransferRepository = () =>
+  ({
+    create: vi.fn(),
+  }) as unknown as TransferRepository;
+
 describe('AccountTransactionService.deposit', () => {
   let uow: UnitOfWork;
   let accountRepository: AccountRepository;
   let transactionRepository: TransactionRepository;
   let ledgerRepository: LedgerRepository;
   let feePolicyRepository: FeePolicyRepository;
+  let transferRepository: TransferRepository;
   let service: AccountTransactionService;
 
   beforeEach(() => {
@@ -57,12 +65,14 @@ describe('AccountTransactionService.deposit', () => {
     transactionRepository = makeTransactionRepository();
     ledgerRepository = makeLedgerRepository();
     feePolicyRepository = makeFeePolicyRepository();
+    transferRepository = makeTransferRepository();
     service = new AccountTransactionService(
       uow,
       accountRepository,
       transactionRepository,
       ledgerRepository,
       feePolicyRepository,
+      transferRepository,
     );
   });
 
@@ -140,6 +150,7 @@ describe('AccountTransactionService.withdraw', () => {
   let transactionRepository: TransactionRepository;
   let ledgerRepository: LedgerRepository;
   let feePolicyRepository: FeePolicyRepository;
+  let transferRepository: TransferRepository;
   let service: AccountTransactionService;
 
   beforeEach(() => {
@@ -148,12 +159,14 @@ describe('AccountTransactionService.withdraw', () => {
     transactionRepository = makeTransactionRepository();
     ledgerRepository = makeLedgerRepository();
     feePolicyRepository = makeFeePolicyRepository();
+    transferRepository = makeTransferRepository();
     service = new AccountTransactionService(
       uow,
       accountRepository,
       transactionRepository,
       ledgerRepository,
       feePolicyRepository,
+      transferRepository,
     );
   });
 
@@ -253,6 +266,240 @@ describe('AccountTransactionService.withdraw', () => {
       transactionErrors.InsufficientFundsConsideringCreditLimitError,
     );
 
+    expect(transactionRepository.create).not.toHaveBeenCalled();
+    expect(ledgerRepository.append).not.toHaveBeenCalled();
+    expect(accountRepository.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('AccountTransactionService.transfer', () => {
+  let uow: UnitOfWork;
+  let accountRepository: AccountRepository;
+  let transactionRepository: TransactionRepository;
+  let ledgerRepository: LedgerRepository;
+  let feePolicyRepository: FeePolicyRepository;
+  let transferRepository: TransferRepository;
+  let service: AccountTransactionService;
+
+  beforeEach(() => {
+    uow = makeUow();
+    accountRepository = makeAccountRepository();
+    transactionRepository = makeTransactionRepository();
+    ledgerRepository = makeLedgerRepository();
+    feePolicyRepository = makeFeePolicyRepository();
+    transferRepository = makeTransferRepository();
+    service = new AccountTransactionService(
+      uow,
+      accountRepository,
+      transactionRepository,
+      ledgerRepository,
+      feePolicyRepository,
+      transferRepository,
+    );
+  });
+
+  it('should throw when from and to accounts are the same', async () => {
+    await expect(
+      service.transfer({
+        fromAccountId: 'a',
+        toAccountId: 'a',
+        amount: 10,
+        idempotencyKey: 'k',
+      } as any),
+    ).rejects.toBeInstanceOf(transactionErrors.TransferAccountsMustDifferError);
+  });
+
+  it('should transfer with applicable fee and record ledger for both accounts', async () => {
+    const fromId = new UniqueEntityID('acc-t1');
+    const toId = new UniqueEntityID('acc-t2');
+    const from = Account.create({}, fromId);
+    const to = Account.create({}, toId);
+    from.balance = 500;
+    from.creditLimit = 50;
+    to.balance = 200;
+
+    (accountRepository.findById as any).mockImplementation(
+      ({ accountId }: any) => {
+        if (accountId === 'acc-t1') return Promise.resolve(from);
+        if (accountId === 'acc-t2') return Promise.resolve(to);
+        return Promise.resolve(null);
+      },
+    );
+
+    const policy = FeePolicy.create({
+      transactionType: TransactionType.TRANSFER,
+      flatFee: 2,
+      percentBps: 100, // 1%
+      startsAt: new Date('2020-01-01T00:00:00Z'),
+      endsAt: new Date('2099-01-01T00:00:00Z'),
+    });
+    (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(policy);
+
+    const result = await service.transfer({
+      fromAccountId: 'acc-t1',
+      toAccountId: 'acc-t2',
+      amount: 100,
+      description: 'P2P',
+    });
+
+    const createdTransfer: Transfer = (transferRepository.create as any).mock
+      .calls[0][0];
+    expect(createdTransfer).toBeInstanceOf(Transfer);
+    expect(createdTransfer.amount).toBe(100);
+    // fee = 2 + 1% of 100 (=1) => 3
+    expect(createdTransfer.feeFrom).toBe(3);
+    expect(createdTransfer.fromAccountId.toValue()).toBe('acc-t1');
+    expect(createdTransfer.toAccountId.toValue()).toBe('acc-t2');
+
+    // two transactions created
+    expect((transactionRepository.create as any).mock.calls.length).toBe(2);
+    const txArgs = (transactionRepository.create as any).mock.calls.map(
+      (c: any[]) => c[0],
+    ) as Transaction[];
+    const txFrom = txArgs.find((t) => t.accountId.toValue() === 'acc-t1')!;
+    const txTo = txArgs.find((t) => t.accountId.toValue() === 'acc-t2')!;
+
+    expect(txFrom.type).toBe(TransactionType.TRANSFER);
+    expect(txFrom.amount).toBe(100);
+    expect(txFrom.fee).toBe(3);
+    expect(txFrom.relatedAccountId?.toValue()).toBe('acc-t2');
+    expect(txFrom.transferId?.toValue()).toBe(createdTransfer.id.toValue());
+
+    expect(txTo.type).toBe(TransactionType.TRANSFER);
+    expect(txTo.amount).toBe(100);
+    expect(txTo.fee).toBe(0);
+    expect(txTo.relatedAccountId?.toValue()).toBe('acc-t1');
+    expect(txTo.transferId?.toValue()).toBe(createdTransfer.id.toValue());
+
+    // two ledger entries
+    const entries = (ledgerRepository.append as any).mock.calls.map(
+      (c: any[]) => c[0],
+    ) as LedgerEntry[];
+    const entryFrom = entries.find((e) => e.accountId.toValue() === 'acc-t1')!;
+    const entryTo = entries.find((e) => e.accountId.toValue() === 'acc-t2')!;
+    expect(entryFrom.debit).toBe(103);
+    expect(entryFrom.credit).toBe(0);
+    expect(entryFrom.transferId?.toValue()).toBe(createdTransfer.id.toValue());
+    expect(entryFrom.balanceAfter).toBe(397);
+
+    expect(entryTo.debit).toBe(0);
+    expect(entryTo.credit).toBe(100);
+    expect(entryTo.transferId?.toValue()).toBe(createdTransfer.id.toValue());
+    expect(entryTo.balanceAfter).toBe(300);
+
+    // accounts updated
+    const updates = (accountRepository.update as any).mock.calls.map(
+      (c: any[]) => c[0],
+    ) as Account[];
+    const updatedFrom = updates.find((a) => a.id.toValue() === 'acc-t1')!;
+    const updatedTo = updates.find((a) => a.id.toValue() === 'acc-t2')!;
+    expect(updatedFrom.balance).toBe(397);
+    expect(updatedTo.balance).toBe(300);
+
+    // result mapping
+    expect(result.transferId).toBe(createdTransfer.id.toValue());
+    expect(result.fromAccountId).toBe('acc-t1');
+    expect(result.toAccountId).toBe('acc-t2');
+    expect(result.fromNewBalance).toBe(397);
+    expect(result.toNewBalance).toBe(300);
+    expect(result.feeApplied).toBe(3);
+  });
+
+  it('should transfer without fee when no active policy', async () => {
+    const from = Account.create({}, new UniqueEntityID('acc-t3'));
+    const to = Account.create({}, new UniqueEntityID('acc-t4'));
+    from.balance = 100;
+    from.creditLimit = 0;
+    to.balance = 0;
+
+    (accountRepository.findById as any).mockImplementation(
+      ({ accountId }: any) => {
+        if (accountId === 'acc-t3') return Promise.resolve(from);
+        if (accountId === 'acc-t4') return Promise.resolve(to);
+        return Promise.resolve(null);
+      },
+    );
+    (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(null);
+
+    const res = await service.transfer({
+      fromAccountId: 'acc-t3',
+      toAccountId: 'acc-t4',
+      amount: 60,
+      idempotencyKey: 'k2',
+    } as any);
+
+    const entryFrom: LedgerEntry = (
+      ledgerRepository.append as any
+    ).mock.calls.find((c: any[]) => c[0].accountId.toValue() === 'acc-t3')[0];
+    const entryTo: LedgerEntry = (
+      ledgerRepository.append as any
+    ).mock.calls.find((c: any[]) => c[0].accountId.toValue() === 'acc-t4')[0];
+    expect(entryFrom.debit).toBe(60);
+    expect(entryFrom.balanceAfter).toBe(40);
+    expect(entryTo.credit).toBe(60);
+    expect(entryTo.balanceAfter).toBe(60);
+
+    expect(res.feeApplied).toBe(0);
+    expect(res.fromNewBalance).toBe(40);
+    expect(res.toNewBalance).toBe(60);
+  });
+
+  it('should throw AccountNotFoundError when one of the accounts is missing', async () => {
+    const from = Account.create({}, new UniqueEntityID('acc-t5'));
+    from.balance = 100;
+    (accountRepository.findById as any).mockImplementation(
+      ({ accountId }: any) => {
+        if (accountId === 'acc-t5') return Promise.resolve(from);
+        return Promise.resolve(null);
+      },
+    );
+    (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(null);
+
+    await expect(
+      service.transfer({
+        fromAccountId: 'acc-t5',
+        toAccountId: 'missing',
+        amount: 10,
+        idempotencyKey: 'k3',
+      } as any),
+    ).rejects.toBeInstanceOf(accountErrors.AccountNotFoundError);
+  });
+
+  it('should throw when available of from < amount + fee', async () => {
+    const from = Account.create({}, new UniqueEntityID('acc-t6'));
+    const to = Account.create({}, new UniqueEntityID('acc-t7'));
+    from.balance = 20;
+    from.creditLimit = 0; // available 20
+    to.balance = 0;
+    (accountRepository.findById as any).mockImplementation(
+      ({ accountId }: any) => {
+        if (accountId === 'acc-t6') return Promise.resolve(from);
+        if (accountId === 'acc-t7') return Promise.resolve(to);
+        return Promise.resolve(null);
+      },
+    );
+
+    const policy = FeePolicy.create({
+      transactionType: TransactionType.TRANSFER,
+      flatFee: 5,
+      percentBps: 0,
+      startsAt: new Date('2020-01-01T00:00:00Z'),
+      endsAt: new Date('2099-01-01T00:00:00Z'),
+    });
+    (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(policy);
+
+    await expect(
+      service.transfer({
+        fromAccountId: 'acc-t6',
+        toAccountId: 'acc-t7',
+        amount: 16,
+        idempotencyKey: 'k4',
+      } as any), // total 21 > available 20
+    ).rejects.toBeInstanceOf(
+      transactionErrors.InsufficientFundsConsideringCreditLimitError,
+    );
+
+    expect(transferRepository.create).not.toHaveBeenCalled();
     expect(transactionRepository.create).not.toHaveBeenCalled();
     expect(ledgerRepository.append).not.toHaveBeenCalled();
     expect(accountRepository.update).not.toHaveBeenCalled();

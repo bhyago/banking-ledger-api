@@ -10,6 +10,8 @@ import { accountErrors } from '@/modules/account/errors/account-errors';
 import { LedgerRepository } from '../repositories/ledger-repository';
 import { FeePolicyRepository } from '../repositories/fee-policy-repository';
 import { transactionErrors } from '../errors/transaction-errors';
+import { TransferRepository } from '../repositories/transfer-repository';
+import { Transfer } from '../entities/transfer';
 
 @Injectable()
 export class AccountTransactionService {
@@ -19,6 +21,7 @@ export class AccountTransactionService {
     private readonly transactionRepository: TransactionRepository,
     private readonly ledgerRepository: LedgerRepository,
     private readonly feePolicyRepository: FeePolicyRepository,
+    private readonly transferRepository: TransferRepository,
   ) {}
 
   async deposit(input: {
@@ -118,6 +121,107 @@ export class AccountTransactionService {
         transactionId: txEntity.id.toValue(),
         accountId: account.id.toValue(),
         newBalance,
+        feeApplied: fee,
+      };
+    });
+  }
+
+  async transfer(input: {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    description?: string;
+  }) {
+    if (input.fromAccountId === input.toAccountId)
+      throw new transactionErrors.TransferAccountsMustDifferError();
+
+    const amount = input.amount;
+    return this.uow.run(async (tx: UnitOfWorkTx) => {
+      const [from, to] = await Promise.all([
+        this.accountRepository.findById({ accountId: input.fromAccountId }, tx),
+        this.accountRepository.findById({ accountId: input.toAccountId }, tx),
+      ]);
+      if (!from || !to) throw new accountErrors.AccountNotFoundError();
+
+      const policy = await this.feePolicyRepository.findActiveByType(
+        { txType: TransactionType.TRANSFER, at: new Date() },
+        tx,
+      );
+      const fee = policy ? policy.calculate(amount) : 0;
+      const total = amount + fee;
+      const available = from.balance + from.creditLimit;
+      if (available < total)
+        throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
+
+      const transfer = Transfer.create({
+        fromAccountId: from.id,
+        toAccountId: to.id,
+        amount,
+        feeFrom: fee,
+      });
+      await this.transferRepository.create(transfer, tx);
+
+      const transactionFrom = Transaction.create({
+        accountId: from.id,
+        type: TransactionType.TRANSFER,
+        amount,
+        fee,
+        description: input.description,
+        relatedAccountId: to.id,
+        transferId: transfer.id,
+      });
+      const transactionTo = Transaction.create({
+        accountId: to.id,
+        type: TransactionType.TRANSFER,
+        amount,
+        fee: 0,
+        description: input.description,
+        relatedAccountId: from.id,
+        transferId: transfer.id,
+      });
+
+      const fromNewBalance = from.balance - total;
+      const toNewBalance = to.balance + amount;
+
+      await this.transactionRepository.create(transactionFrom, tx);
+      await this.transactionRepository.create(transactionTo, tx);
+
+      await this.ledgerRepository.append(
+        LedgerEntry.create({
+          accountId: from.id,
+          transactionId: transactionFrom.id,
+          transferId: transfer.id,
+          debit: total,
+          credit: 0,
+          balanceAfter: fromNewBalance,
+        }),
+        tx,
+      );
+      await this.ledgerRepository.append(
+        LedgerEntry.create({
+          accountId: to.id,
+          transactionId: transactionTo.id,
+          transferId: transfer.id,
+          debit: 0,
+          credit: amount,
+          balanceAfter: toNewBalance,
+        }),
+        tx,
+      );
+
+      from.balance = fromNewBalance;
+      to.balance = toNewBalance;
+      await Promise.all([
+        this.accountRepository.update(from, tx),
+        this.accountRepository.update(to, tx),
+      ]);
+
+      return {
+        transferId: transfer.id.toValue(),
+        fromAccountId: from.id.toValue(),
+        toAccountId: to.id.toValue(),
+        fromNewBalance: fromNewBalance,
+        toNewBalance: toNewBalance,
         feeApplied: fee,
       };
     });
