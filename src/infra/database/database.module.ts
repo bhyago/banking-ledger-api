@@ -8,6 +8,10 @@ import { UNIT_OF_WORK } from '@/common/uow';
 import { PrismaUnitOfWork } from './prisma/prisma-unit-of-work';
 import { TransactionRepository } from '@/modules/transaction/repositories/transaction-repository';
 import { PrismaTransactionRepository } from './prisma/repositories/prisma-transaction-repository';
+import { FeePolicyRepository } from '@/modules/transaction/repositories/fee-policy-repository';
+import { PrismaFeePolicyRepository } from './prisma/repositories/prisma-fee-policy-repository';
+import { TransferRepository } from '@/modules/transaction/repositories/transfer-repository';
+import { PrismaTransferRepository } from './prisma/repositories/prisma-transfer-repository';
 
 @Module({
   imports: [],
@@ -26,11 +30,21 @@ import { PrismaTransactionRepository } from './prisma/repositories/prisma-transa
       provide: TransactionRepository,
       useClass: PrismaTransactionRepository,
     },
+    {
+      provide: TransferRepository,
+      useClass: PrismaTransferRepository,
+    },
+    {
+      provide: FeePolicyRepository,
+      useClass: PrismaFeePolicyRepository,
+    },
   ],
   exports: [
     AccountRepository,
     LedgerRepository,
     TransactionRepository,
+    TransferRepository,
+    FeePolicyRepository,
     UNIT_OF_WORK,
   ],
 })

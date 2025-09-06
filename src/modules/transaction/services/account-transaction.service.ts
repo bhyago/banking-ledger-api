@@ -84,7 +84,7 @@ export class AccountTransactionService {
       if (!account) throw new accountErrors.AccountNotFoundError();
 
       const policy = await this.feePolicyRepository.findActiveByType(
-        { txType: TransactionType.WITHDRAW, at: new Date() },
+        { transactionType: TransactionType.WITHDRAW, at: new Date() },
         tx,
       );
       const fee = policy ? policy.calculate(amount) : 0;
@@ -144,7 +144,7 @@ export class AccountTransactionService {
       if (!from || !to) throw new accountErrors.AccountNotFoundError();
 
       const policy = await this.feePolicyRepository.findActiveByType(
-        { txType: TransactionType.TRANSFER, at: new Date() },
+        { transactionType: TransactionType.TRANSFER, at: new Date() },
         tx,
       );
       const fee = policy ? policy.calculate(amount) : 0;

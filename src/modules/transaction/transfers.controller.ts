@@ -9,25 +9,35 @@ import {
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { transferDTO, transferSchemaValidation } from './dtos/transfer';
-import { TransferUseCase } from './usecases/transfer';
+import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
+import { QUEUES } from './async/messages';
+import { randomUUID } from 'crypto';
 
 @ApiTags('transfer')
 @Controller('transfer')
 export class TransferController {
-  constructor(private readonly transferUseCase: TransferUseCase) {}
+  constructor(private readonly queueSender: SendMessageToQueueProvider) {}
 
   @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiResponse({ status: HttpStatus.OK, type: transferDTO.Output })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiResponse({ status: HttpStatus.ACCEPTED })
   async transfer(
     @Body(new ZodValidationPipe(transferSchemaValidation.body))
     body: transferDTO.BodyDTO,
-  ): Promise<transferDTO.Output> {
-    return this.transferUseCase.execute({
-      fromAccountId: body.fromAccountId,
-      toAccountId: body.toAccountId,
-      amount: body.amount,
-      description: body.description ?? undefined,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ): Promise<{ queued: true; id: string; queuedAt: Date }> {
+    const id = idempotencyKey || randomUUID();
+    await this.queueSender.execute({
+      queueName: QUEUES.transfer,
+      object: {
+        id,
+        fromAccountId: body.fromAccountId,
+        toAccountId: body.toAccountId,
+        amount: body.amount,
+        description: body.description ?? undefined,
+        idempotencyKey: idempotencyKey,
+      },
     });
+    return { queued: true, id, queuedAt: new Date() };
   }
 }

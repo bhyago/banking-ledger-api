@@ -5,6 +5,7 @@ import { EnvModule } from './env/env.module';
 import { AccountModule } from '@/modules/account/account.module';
 import { LedgerModule } from '@/modules/ledger/ledger.module';
 import { TransactionModule } from '@/modules/transaction/transaction.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { TransactionModule } from '@/modules/transaction/transaction.module';
       validate: (env) => envSchema.parse(env),
       isGlobal: true,
     }),
+    EventEmitterModule.forRoot(),
     EnvModule,
     AccountModule,
     LedgerModule,

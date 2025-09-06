@@ -6,15 +6,18 @@ import { AccountTransactionService } from './services/account-transaction.servic
 import { TransferController } from './transfers.controller';
 import { TransferUseCase } from './usecases/transfer';
 import { WithdrawUseCase } from './usecases/withdraw';
+import { QueueModule } from '@/infra/queue/queue.module';
+import { TransactionQueueBootstrap } from './async/queue-bootstrap';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, QueueModule],
   controllers: [TransactionController, TransferController],
   providers: [
     AccountTransactionService,
     DepositUseCase,
     WithdrawUseCase,
     TransferUseCase,
+    TransactionQueueBootstrap,
   ],
   exports: [],
 })
