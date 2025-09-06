@@ -142,6 +142,32 @@ describe('AccountTransactionService.deposit', () => {
     expect(ledgerRepository.append).not.toHaveBeenCalled();
     expect(accountRepository.update).not.toHaveBeenCalled();
   });
+
+  it('should be idempotent on duplicate key (deposit)', async () => {
+    const accountId = new UniqueEntityID('acc-d-dup');
+    const account = Account.create({}, accountId);
+    account.balance = 200;
+
+    (accountRepository.findById as any).mockResolvedValueOnce(account);
+    // Simulate unique constraint (duplicate idempotency key)
+    (transactionRepository.create as any).mockRejectedValueOnce({
+      code: 'P2002',
+    });
+
+    const result = await service.deposit({
+      accountId: 'acc-d-dup',
+      amount: 50,
+      idempotencyKey: 'dup-1',
+    } as any);
+
+    expect(result).toEqual({
+      transactionId: 'idempotent',
+      accountId: 'acc-d-dup',
+      newBalance: 200,
+    });
+    expect(ledgerRepository.append).not.toHaveBeenCalled();
+    expect(accountRepository.update).not.toHaveBeenCalled();
+  });
 });
 
 describe('AccountTransactionService.withdraw', () => {
@@ -267,6 +293,33 @@ describe('AccountTransactionService.withdraw', () => {
     );
 
     expect(transactionRepository.create).not.toHaveBeenCalled();
+    expect(ledgerRepository.append).not.toHaveBeenCalled();
+    expect(accountRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('should be idempotent on duplicate key (withdraw)', async () => {
+    const accountId = new UniqueEntityID('acc-w-dup');
+    const account = Account.create({}, accountId);
+    account.balance = 300;
+    account.creditLimit = 0;
+
+    (accountRepository.findById as any).mockResolvedValueOnce(account);
+    (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(null);
+    (transactionRepository.create as any).mockRejectedValueOnce({
+      code: 'P2002',
+    });
+
+    const result = await service.withdraw({
+      accountId: 'acc-w-dup',
+      amount: 10,
+      idempotencyKey: 'dup-2',
+    } as any);
+    expect(result).toEqual({
+      transactionId: 'idempotent',
+      accountId: 'acc-w-dup',
+      newBalance: 300,
+      feeApplied: 0,
+    });
     expect(ledgerRepository.append).not.toHaveBeenCalled();
     expect(accountRepository.update).not.toHaveBeenCalled();
   });
@@ -500,6 +553,42 @@ describe('AccountTransactionService.transfer', () => {
     );
 
     expect(transferRepository.create).not.toHaveBeenCalled();
+    expect(transactionRepository.create).not.toHaveBeenCalled();
+    expect(ledgerRepository.append).not.toHaveBeenCalled();
+    expect(accountRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('should be idempotent on duplicate key (transfer)', async () => {
+    const from = Account.create({}, new UniqueEntityID('acc-tdup-1'));
+    const to = Account.create({}, new UniqueEntityID('acc-tdup-2'));
+    from.balance = 100;
+    from.creditLimit = 0;
+    to.balance = 0;
+
+    (accountRepository.findById as any).mockImplementation(
+      ({ accountId }: any) => {
+        if (accountId === 'acc-tdup-1') return Promise.resolve(from);
+        if (accountId === 'acc-tdup-2') return Promise.resolve(to);
+        return Promise.resolve(null);
+      },
+    );
+    (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(null);
+    (transferRepository.create as any).mockRejectedValueOnce({ code: 'P2002' });
+
+    const res = await service.transfer({
+      fromAccountId: 'acc-tdup-1',
+      toAccountId: 'acc-tdup-2',
+      amount: 20,
+      idempotencyKey: 'dup-tr-1',
+    } as any);
+    expect(res).toEqual({
+      transferId: 'idempotent',
+      fromAccountId: 'acc-tdup-1',
+      toAccountId: 'acc-tdup-2',
+      fromNewBalance: 100,
+      toNewBalance: 0,
+      feeApplied: 0,
+    });
     expect(transactionRepository.create).not.toHaveBeenCalled();
     expect(ledgerRepository.append).not.toHaveBeenCalled();
     expect(accountRepository.update).not.toHaveBeenCalled();

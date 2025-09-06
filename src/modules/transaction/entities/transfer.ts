@@ -9,6 +9,7 @@ export interface TransferProps {
   amount: number;
   feeFrom: number;
   status: TransferStatus;
+  idempotencyKey: string;
   createdAt: Date;
 }
 
@@ -48,5 +49,8 @@ export class Transfer extends Entity<TransferProps> {
   }
   get createdAt(): Date {
     return this.props.createdAt;
+  }
+  get idempotencyKey(): string {
+    return this.props.idempotencyKey;
   }
 }

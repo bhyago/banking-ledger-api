@@ -12,6 +12,10 @@ import { FeePolicyRepository } from '../repositories/fee-policy-repository';
 import { transactionErrors } from '../errors/transaction-errors';
 import { TransferRepository } from '../repositories/transfer-repository';
 import { Transfer } from '../entities/transfer';
+function isUniqueError(e: any) {
+  const msg = String(e?.message || '');
+  return e?.code === 'P2002' || /unique|duplicate/i.test(msg);
+}
 
 @Injectable()
 export class AccountTransactionService {
@@ -28,6 +32,7 @@ export class AccountTransactionService {
     accountId: string;
     amount: number;
     description?: string;
+    idempotencyKey: string;
   }) {
     const amount = input.amount;
     return this.uow.run(async (tx: UnitOfWorkTx) => {
@@ -42,11 +47,23 @@ export class AccountTransactionService {
         type: TransactionType.DEPOSIT,
         amount,
         description: input.description,
+        idempotencyKey: input.idempotencyKey,
       });
 
       const newBalance = account.balance + amount;
 
-      await this.transactionRepository.create(transactionEntity, tx);
+      try {
+        await this.transactionRepository.create(transactionEntity, tx);
+      } catch (e) {
+        if (isUniqueError(e)) {
+          return {
+            transactionId: 'idempotent',
+            accountId: account.id.toValue(),
+            newBalance: account.balance,
+          };
+        }
+        throw e;
+      }
       await this.ledgerRepository.append(
         LedgerEntry.create({
           accountId: account.id,
@@ -62,11 +79,12 @@ export class AccountTransactionService {
       account.balance = newBalance;
       await this.accountRepository.update(account, tx);
 
-      return {
+      const out = {
         transactionId: transactionEntity.id.toValue(),
         accountId: account.id.toValue(),
         newBalance,
       };
+      return out;
     });
   }
 
@@ -74,6 +92,7 @@ export class AccountTransactionService {
     accountId: string;
     amount: number;
     description?: string;
+    idempotencyKey: string;
   }) {
     const amount = input.amount;
     return this.uow.run(async (tx: UnitOfWorkTx) => {
@@ -99,10 +118,23 @@ export class AccountTransactionService {
         amount,
         fee,
         description: input.description,
+        idempotencyKey: input.idempotencyKey,
       });
 
       const newBalance = account.balance - total;
-      await this.transactionRepository.create(txEntity, tx);
+      try {
+        await this.transactionRepository.create(txEntity, tx);
+      } catch (e) {
+        if (isUniqueError(e)) {
+          return {
+            transactionId: 'idempotent',
+            accountId: account.id.toValue(),
+            newBalance: account.balance,
+            feeApplied: 0,
+          };
+        }
+        throw e;
+      }
       await this.ledgerRepository.append(
         LedgerEntry.create({
           accountId: account.id,
@@ -117,12 +149,13 @@ export class AccountTransactionService {
       account.balance = newBalance;
       await this.accountRepository.update(account, tx);
 
-      return {
+      const out = {
         transactionId: txEntity.id.toValue(),
         accountId: account.id.toValue(),
         newBalance,
         feeApplied: fee,
       };
+      return out;
     });
   }
 
@@ -131,6 +164,7 @@ export class AccountTransactionService {
     toAccountId: string;
     amount: number;
     description?: string;
+    idempotencyKey: string;
   }) {
     if (input.fromAccountId === input.toAccountId)
       throw new transactionErrors.TransferAccountsMustDifferError();
@@ -158,8 +192,23 @@ export class AccountTransactionService {
         toAccountId: to.id,
         amount,
         feeFrom: fee,
+        idempotencyKey: input.idempotencyKey,
       });
-      await this.transferRepository.create(transfer, tx);
+      try {
+        await this.transferRepository.create(transfer, tx);
+      } catch (e) {
+        if (isUniqueError(e)) {
+          return {
+            transferId: 'idempotent',
+            fromAccountId: from.id.toValue(),
+            toAccountId: to.id.toValue(),
+            fromNewBalance: from.balance,
+            toNewBalance: to.balance,
+            feeApplied: 0,
+          };
+        }
+        throw e;
+      }
 
       const transactionFrom = Transaction.create({
         accountId: from.id,
@@ -216,7 +265,7 @@ export class AccountTransactionService {
         this.accountRepository.update(to, tx),
       ]);
 
-      return {
+      const out = {
         transferId: transfer.id.toValue(),
         fromAccountId: from.id.toValue(),
         toAccountId: to.id.toValue(),
@@ -224,6 +273,7 @@ export class AccountTransactionService {
         toNewBalance: toNewBalance,
         feeApplied: fee,
       };
+      return out;
     });
   }
 }

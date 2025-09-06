@@ -15,7 +15,11 @@ export class DepositUseCase {
     const items = Array.isArray(input) ? input : [input];
     const results: depositDTO.Output[] = [];
     for (const it of items) {
-      const result = await this.txService.deposit({ ...it });
+      const anyIt: any = it as any;
+      const result = await this.txService.deposit({
+        ...it,
+        idempotencyKey: anyIt.id ?? anyIt.idempotencyKey,
+      });
       results.push({
         transactionId: result.transactionId,
         accountId: result.accountId,

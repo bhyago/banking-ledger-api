@@ -15,11 +15,13 @@ export class TransferUseCase {
     const items = Array.isArray(input) ? input : [input];
     const results: transferDTO.Output[] = [];
     for (const it of items) {
+      const anyIt: any = it as any;
       const result = await this.txService.transfer({
         fromAccountId: it.fromAccountId,
         toAccountId: it.toAccountId,
         amount: it.amount,
         description: it.description,
+        idempotencyKey: anyIt.idempotencyKey ?? anyIt.id,
       });
       results.push({
         transferId: result.transferId,

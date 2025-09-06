@@ -25,16 +25,21 @@ export class PrismaTransactionMapper {
   }
 
   static toPrisma(entity: Transaction): Prisma.TransactionUncheckedCreateInput {
-    return {
+    const data: any = {
       accountId: entity.accountId.toValue(),
-      type: entity.type as any,
+      type: entity.type,
       amountCents: BigInt(Math.round(entity.amount * 100)),
       feeCents: BigInt(Math.round(entity.fee * 100)),
       description: entity.description ?? null,
       relatedAccountId: entity.relatedAccountId?.toValue() ?? null,
-      status: entity.status as any,
+      status: entity.status,
       transferId: entity.transferId?.toValue() ?? null,
       createdAt: entity.createdAt,
     };
+    // Optional field for newer schema versions
+    if (typeof entity.idempotencyKey !== 'undefined') {
+      data.idempotencyKey = entity.idempotencyKey ?? null;
+    }
+    return data as Prisma.TransactionUncheckedCreateInput;
   }
 }

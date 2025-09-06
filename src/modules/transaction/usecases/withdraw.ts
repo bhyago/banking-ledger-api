@@ -15,7 +15,11 @@ export class WithdrawUseCase {
     const items = Array.isArray(input) ? input : [input];
     const results: withdrawDTO.Output[] = [];
     for (const it of items) {
-      const result = await this.txService.withdraw({ ...it });
+      const anyIt: any = it as any;
+      const result = await this.txService.withdraw({
+        ...it,
+        idempotencyKey: anyIt.id ?? anyIt.idempotencyKey,
+      });
       results.push({
         transactionId: result.transactionId,
         accountId: result.accountId,

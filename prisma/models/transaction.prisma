@@ -27,11 +27,13 @@ model Transaction {
   relatedAccountId String?           @map("related_account_id")
   status           TransactionStatus @default(PENDING)
   transferId       String?           @map("transfer_id")
+  idempotencyKey   String?           @map("idempotency_key") @db.VarChar(255)
   createdAt        DateTime          @map("created_at") @db.Timestamptz
 
   ledger LedgerEntry[]
 
   @@index([accountId, createdAt(sort: Desc)], name: "idx_tx_account_created_at_desc")
+  @@index([type, idempotencyKey], name: "idx_tx_type_idemp")
   @@map("transaction")
 }
 

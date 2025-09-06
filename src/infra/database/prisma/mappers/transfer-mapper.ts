@@ -25,7 +25,7 @@ export class PrismaTransferMapper {
       amountCents: BigInt(Math.round(entity.amount * 100)),
       feeFromCents: BigInt(Math.round(entity.feeFrom * 100)),
       status: entity.status as any,
-      idempotencyKey: '',
+      idempotencyKey: entity.idempotencyKey as string,
       createdAt: entity.createdAt,
     };
   }

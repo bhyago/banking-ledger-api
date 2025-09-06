@@ -12,6 +12,7 @@ export interface TransactionProps {
   relatedAccountId?: UniqueEntityID;
   status: TransactionStatus;
   transferId?: UniqueEntityID;
+  idempotencyKey?: string;
   createdAt: Date;
 }
 
@@ -60,5 +61,8 @@ export class Transaction extends Entity<TransactionProps> {
   }
   get createdAt(): Date {
     return this.props.createdAt;
+  }
+  get idempotencyKey(): string | undefined {
+    return this.props.idempotencyKey;
   }
 }
