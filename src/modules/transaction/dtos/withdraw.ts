@@ -5,17 +5,24 @@ import { z } from 'zod';
 
 export const withdrawSchemaValidation = {
   params: z.object({
-    accountId: z.string(),
+    accountId: z.string().describe('Identificador ULID da conta.'),
   }),
   body: z.object({
-    amount: z.number().positive(),
-    description: z.string().max(280).optional(),
+    amount: z
+      .number()
+      .positive()
+      .describe('Valor do saque em unidades monetárias.'),
+    description: z
+      .string()
+      .max(280)
+      .optional()
+      .describe('Descrição opcional do saque.'),
   }),
   response: z.object({
-    transactionId: z.string(),
-    accountId: z.string(),
-    newBalance: z.number(),
-    feeApplied: z.number(),
+    transactionId: z.string().describe('Identificador da transação gerada.'),
+    accountId: z.string().describe('Identificador da conta.'),
+    newBalance: z.number().describe('Novo saldo após o saque.'),
+    feeApplied: z.number().describe('Taxa aplicada ao saque.'),
   }),
 } satisfies SchemaValidation;
 
@@ -24,13 +31,26 @@ type WithdrawBody = z.infer<typeof withdrawSchemaValidation.body>;
 
 export namespace withdrawDTO {
   export class WithdrawParamsDTO implements WithdrawParams {
-    @ApiProperty({ required: true })
+    @ApiProperty({
+      required: true,
+      description: 'Identificador ULID da conta.',
+      example: '01J9MZ3ZYK2J4TN2YCE2V7ZVB8',
+      format: 'ulid',
+    })
     accountId!: string;
   }
   export class WithdrawBodyDTO implements WithdrawBody {
-    @ApiProperty({ required: true })
+    @ApiProperty({
+      required: true,
+      description: 'Valor do saque.',
+      example: 50.25,
+    })
     amount!: number;
-    @ApiProperty({ required: false })
+    @ApiProperty({
+      required: false,
+      description: 'Descrição do saque.',
+      example: 'Saque no ATM',
+    })
     description?: string;
   }
 

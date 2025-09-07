@@ -4,10 +4,14 @@ import { z } from 'zod';
 
 export const createAccountSchemaValidation = {
   body: z.object({
-    creditLimit: z.number().min(0).optional(),
+    creditLimit: z
+      .number()
+      .min(0)
+      .optional()
+      .describe('Limite de crédito inicial. Padrão: 0.'),
   }),
   response: z.object({
-    accountId: z.string(),
+    accountId: z.string().describe('Identificador ULID da conta criada.'),
   }),
 } satisfies SchemaValidation;
 

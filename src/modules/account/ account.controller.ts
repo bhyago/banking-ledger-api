@@ -17,6 +17,7 @@ import {
   ApiNotFoundResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
+import { ErrorResponseDTO } from '@/infra/http/dtos/error-response';
 import { createAccountDTO } from './dtos/create-account';
 import {
   getAccountByIdDTO,
@@ -42,6 +43,10 @@ export class AccountController {
   @ApiCreatedResponse({
     description: 'Conta criada com sucesso',
     type: createAccountDTO.CreateAccountOutput,
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Falha de validação',
+    type: ErrorResponseDTO,
   })
   async createAccount(
     @Body(new ZodValidationPipe(createAccountDTO.CreateAccountInput))
@@ -73,23 +78,11 @@ export class AccountController {
   })
   @ApiNotFoundResponse({
     description: 'Conta não encontrada',
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', example: 'AccountNotFoundError' },
-        message: { type: 'string', example: 'Account not found' },
-      },
-    },
+    type: ErrorResponseDTO,
   })
   @ApiUnprocessableEntityResponse({
     description: 'Falha de validação (ex.: ULID inválido)',
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', example: 'ZodValidationException' },
-        message: { type: 'string', example: 'Validation failed' },
-      },
-    },
+    type: ErrorResponseDTO,
   })
   async getAccountById(
     @Param(new ZodValidationPipe(getAccountByIdSchemaValidation.params))

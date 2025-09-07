@@ -6,7 +6,15 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiParam,
+  ApiNotFoundResponse,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
+import { ErrorResponseDTO } from '@/infra/http/dtos/error-response';
 import { ZodValidationPipe } from 'nestjs-zod';
 import {
   getAccountLedgerDTO,
@@ -28,9 +36,28 @@ export class LedgerController {
     description:
       'Retorna os lançamentos (razão) de uma conta com paginação e ordenação.',
   })
+  @ApiParam({
+    name: 'accountId',
+    description: 'Identificador ULID da conta.',
+    required: true,
+    example: '01J9MZ3ZYK2J4TN2YCE2V7ZVB8',
+    schema: {
+      type: 'string',
+      format: 'ulid',
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$',
+    },
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     type: getAccountLedgerDTO.GetAccountLedgerOutput,
+  })
+  @ApiNotFoundResponse({
+    description: 'Conta não encontrada',
+    type: ErrorResponseDTO,
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Falha de validação (params/query inválidos)',
+    type: ErrorResponseDTO,
   })
   async getLedger(
     @Param(new ZodValidationPipe(getAccountLedgerSchemaValidation.params))

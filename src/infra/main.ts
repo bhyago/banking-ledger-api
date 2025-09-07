@@ -20,10 +20,21 @@ async function bootstrap() {
 
   patchNestJsSwagger();
   const config = new DocumentBuilder()
-    .addBearerAuth()
     .setTitle('Banking Ledger API')
-    .setDescription('api em desenvolvimento')
+    .setDescription(
+      [
+        'API para gerenciamento de contas, transações e transferências com consistência financeira.',
+        '- Processamento assíncrono via filas (idempotência suportada).',
+        '- Padrões de erro: corpo { name, message } para erros conhecidos.',
+        '- Todas as rotas usam validação com Zod e estão documentadas com exemplos.',
+      ].join('\n'),
+    )
     .setVersion('1.0.0')
+    .addBearerAuth()
+    .addTag('account', 'Gerenciamento de contas')
+    .addTag('ledger', 'Consulta de lançamentos (razão)')
+    .addTag('transactions', 'Depósitos, saques e listagem')
+    .addTag('transfer', 'Transferências entre contas')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

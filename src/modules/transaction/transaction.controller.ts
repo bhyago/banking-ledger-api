@@ -9,7 +9,20 @@ import {
   Get,
   Query,
 } from '@nestjs/common';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiResponse,
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiHeader,
+  ApiNotFoundResponse,
+  ApiUnprocessableEntityResponse,
+  ApiOkResponse,
+  ApiAcceptedResponse,
+  ApiBadRequestResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { ErrorResponseDTO } from '@/infra/http/dtos/error-response';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { depositDTO, depositSchemaValidation } from './dtos/deposit';
 import { withdrawDTO, withdrawSchemaValidation } from './dtos/withdraw';
@@ -17,7 +30,7 @@ import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-t
 import { randomUUID } from 'crypto';
 import { QUEUES } from './async/messages';
 import {
-  type getAccountTransactionsDTO,
+  getAccountTransactionsDTO,
   getAccountTransactionsSchemaValidation,
 } from './dtos/get-account-transactions';
 import { GetAccountTransactionsUseCase } from './usecases/get-account-transactions';
@@ -32,9 +45,38 @@ export class TransactionController {
 
   @Post('deposit')
   @HttpCode(HttpStatus.ACCEPTED)
-  @ApiResponse({
-    status: HttpStatus.ACCEPTED,
+  @ApiOperation({
+    summary: 'Depositar',
+    description: 'Enfileira um depósito para processamento assíncrono.',
+  })
+  @ApiParam({
+    name: 'accountId',
+    description: 'Identificador ULID da conta.',
+    required: true,
+    example: '01J9MZ3ZYK2J4TN2YCE2V7ZVB8',
+    schema: {
+      type: 'string',
+      format: 'ulid',
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$',
+    },
+  })
+  @ApiHeader({
+    name: 'idempotency-key',
+    required: false,
+    description: 'Chave para garantir idempotência da operação.',
+    example: 'c0a8016e-6d53-4a9b-9d3f-0b2a4c5f2a11',
+  })
+  @ApiAcceptedResponse({
+    description: 'Solicitação enfileirada',
     type: depositDTO.DepositOutput,
+  })
+  @ApiNotFoundResponse({
+    description: 'Conta não encontrada',
+    type: ErrorResponseDTO,
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Falha de validação',
+    type: ErrorResponseDTO,
   })
   async deposit(
     @Param(new ZodValidationPipe(depositSchemaValidation.params))
@@ -58,9 +100,38 @@ export class TransactionController {
 
   @Post('withdraw')
   @HttpCode(HttpStatus.ACCEPTED)
-  @ApiResponse({
-    status: HttpStatus.ACCEPTED,
+  @ApiOperation({
+    summary: 'Sacar',
+    description: 'Enfileira um saque para processamento assíncrono.',
+  })
+  @ApiParam({
+    name: 'accountId',
+    description: 'Identificador ULID da conta.',
+    required: true,
+    example: '01J9MZ3ZYK2J4TN2YCE2V7ZVB8',
+    schema: {
+      type: 'string',
+      format: 'ulid',
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$',
+    },
+  })
+  @ApiHeader({
+    name: 'idempotency-key',
+    required: false,
+    description: 'Chave para garantir idempotência da operação.',
+    example: 'b6f1a7f8-1a13-4d68-8a9f-9e4caef92af0',
+  })
+  @ApiAcceptedResponse({
+    description: 'Solicitação enfileirada',
     type: withdrawDTO.WithdrawOutput,
+  })
+  @ApiNotFoundResponse({
+    description: 'Conta não encontrada',
+    type: ErrorResponseDTO,
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Falha de validação ou saldo insuficiente',
+    type: ErrorResponseDTO,
   })
   async withdraw(
     @Param(new ZodValidationPipe(withdrawSchemaValidation.params))
@@ -84,7 +155,58 @@ export class TransactionController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiResponse({ status: HttpStatus.OK })
+  @ApiOperation({
+    summary: 'Listar transações',
+    description: 'Lista transações da conta com paginação e filtros.',
+  })
+  @ApiParam({
+    name: 'accountId',
+    description: 'Identificador ULID da conta.',
+    required: true,
+    example: '01J9MZ3ZYK2J4TN2YCE2V7ZVB8',
+    schema: {
+      type: 'string',
+      format: 'ulid',
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$',
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Página (>= 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'perPage',
+    required: false,
+    description: 'Itens por página (1-100)',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'order',
+    required: false,
+    description: 'Ordenação por data',
+    example: 'asc',
+    enum: ['asc', 'desc'],
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filtra por status',
+    enum: ['PENDING', 'APPLIED', 'REJECTED'],
+  })
+  @ApiOkResponse({
+    description: 'Lista recuperada com sucesso',
+    type: getAccountTransactionsDTO.GetAccountTransactionsOutput,
+  })
+  @ApiNotFoundResponse({
+    description: 'Conta não encontrada',
+    type: ErrorResponseDTO,
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Falha de validação',
+    type: ErrorResponseDTO,
+  })
   async listTransactions(
     @Param(new ZodValidationPipe(getAccountTransactionsSchemaValidation.params))
     param: getAccountTransactionsDTO.GetAccountTransactionsParams,
