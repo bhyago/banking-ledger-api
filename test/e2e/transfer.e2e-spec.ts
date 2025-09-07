@@ -72,7 +72,6 @@ describe('Transfer HTTP (E2E)', () => {
       .post('/transfer')
       .send({ fromAccountId: 'A', toAccountId: 'A', amount: -1 });
 
-    // A validação Zod do body deve falhar por amount inválido
     expect([400, 422]).toContain(res.statusCode);
   });
 

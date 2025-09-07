@@ -9,6 +9,7 @@ import { WithdrawUseCase } from './usecases/withdraw';
 import { QueueModule } from '@/infra/queue/queue.module';
 import { TransactionQueueBootstrap } from './async/queue-bootstrap';
 import { IdempotencyKeyMiddleware } from '@/infra/http/middlewares/idempotency-key.middleware';
+import { AccountLockService } from '@/common/concurrency/account-lock.service';
 
 @Module({
   imports: [DatabaseModule, QueueModule],
@@ -19,6 +20,7 @@ import { IdempotencyKeyMiddleware } from '@/infra/http/middlewares/idempotency-k
     WithdrawUseCase,
     TransferUseCase,
     TransactionQueueBootstrap,
+    AccountLockService,
   ],
   exports: [],
 })

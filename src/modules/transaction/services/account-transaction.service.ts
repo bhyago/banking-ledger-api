@@ -12,6 +12,7 @@ import { FeePolicyRepository } from '../repositories/fee-policy-repository';
 import { transactionErrors } from '../errors/transaction-errors';
 import { TransferRepository } from '../repositories/transfer-repository';
 import { Transfer } from '../entities/transfer';
+import { AccountLockService } from '@/common/concurrency/account-lock.service';
 function isUniqueError(e: any) {
   const msg = String(e?.message || '');
   return e?.code === 'P2002' || /unique|duplicate/i.test(msg);
@@ -26,6 +27,7 @@ export class AccountTransactionService {
     private readonly ledgerRepository: LedgerRepository,
     private readonly feePolicyRepository: FeePolicyRepository,
     private readonly transferRepository: TransferRepository,
+    private readonly accountLock: AccountLockService,
   ) {}
 
   async deposit(input: {
@@ -35,57 +37,59 @@ export class AccountTransactionService {
     idempotencyKey: string;
   }) {
     const amount = input.amount;
-    return this.uow.run(async (tx: UnitOfWorkTx) => {
-      const account = await this.accountRepository.findById(
-        { accountId: input.accountId },
-        tx,
-      );
-      if (!account) throw new accountErrors.AccountNotFoundError();
+    return this.accountLock.withLocks([input.accountId], async () =>
+      this.uow.run(async (tx: UnitOfWorkTx) => {
+        const account = await this.accountRepository.findById(
+          { accountId: input.accountId },
+          tx,
+        );
+        if (!account) throw new accountErrors.AccountNotFoundError();
 
-      const transactionEntity = Transaction.create({
-        accountId: new UniqueEntityID(account.id.toValue()),
-        type: TransactionType.DEPOSIT,
-        amount,
-        description: input.description,
-        idempotencyKey: input.idempotencyKey,
-      });
+        const transactionEntity = Transaction.create({
+          accountId: new UniqueEntityID(account.id.toValue()),
+          type: TransactionType.DEPOSIT,
+          amount,
+          description: input.description,
+          idempotencyKey: input.idempotencyKey,
+        });
 
-      const newBalance = account.balance + amount;
+        const newBalance = account.balance + amount;
 
-      try {
-        await this.transactionRepository.create(transactionEntity, tx);
-      } catch (e) {
-        if (isUniqueError(e)) {
-          return {
-            transactionId: 'idempotent',
-            accountId: account.id.toValue(),
-            newBalance: account.balance,
-          };
+        try {
+          await this.transactionRepository.create(transactionEntity, tx);
+        } catch (e) {
+          if (isUniqueError(e)) {
+            return {
+              transactionId: 'idempotent',
+              accountId: account.id.toValue(),
+              newBalance: account.balance,
+            };
+          }
+          throw e;
         }
-        throw e;
-      }
-      await this.ledgerRepository.append(
-        LedgerEntry.create({
-          accountId: account.id,
-          transactionId: transactionEntity.id,
-          transferId: null,
-          debit: 0,
-          credit: amount,
-          balanceAfter: newBalance,
-        }),
-        tx,
-      );
+        await this.ledgerRepository.append(
+          LedgerEntry.create({
+            accountId: account.id,
+            transactionId: transactionEntity.id,
+            transferId: null,
+            debit: 0,
+            credit: amount,
+            balanceAfter: newBalance,
+          }),
+          tx,
+        );
 
-      account.balance = newBalance;
-      await this.accountRepository.update(account, tx);
+        account.balance = newBalance;
+        await this.accountRepository.update(account, tx);
 
-      const out = {
-        transactionId: transactionEntity.id.toValue(),
-        accountId: account.id.toValue(),
-        newBalance,
-      };
-      return out;
-    });
+        const out = {
+          transactionId: transactionEntity.id.toValue(),
+          accountId: account.id.toValue(),
+          newBalance,
+        };
+        return out;
+      }),
+    );
   }
 
   async withdraw(input: {
@@ -95,68 +99,70 @@ export class AccountTransactionService {
     idempotencyKey: string;
   }) {
     const amount = input.amount;
-    return this.uow.run(async (tx: UnitOfWorkTx) => {
-      const account = await this.accountRepository.findById(
-        { accountId: input.accountId },
-        tx,
-      );
-      if (!account) throw new accountErrors.AccountNotFoundError();
+    return this.accountLock.withLocks([input.accountId], async () =>
+      this.uow.run(async (tx: UnitOfWorkTx) => {
+        const account = await this.accountRepository.findById(
+          { accountId: input.accountId },
+          tx,
+        );
+        if (!account) throw new accountErrors.AccountNotFoundError();
 
-      const policy = await this.feePolicyRepository.findActiveByType(
-        { transactionType: TransactionType.WITHDRAW, at: new Date() },
-        tx,
-      );
-      const fee = policy ? policy.calculate(amount) : 0;
-      const total = amount + fee;
-      const available = account.balance + account.creditLimit;
-      if (available < total)
-        throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
+        const policy = await this.feePolicyRepository.findActiveByType(
+          { transactionType: TransactionType.WITHDRAW, at: new Date() },
+          tx,
+        );
+        const fee = policy ? policy.calculate(amount) : 0;
+        const total = amount + fee;
+        const available = account.balance + account.creditLimit;
+        if (available < total)
+          throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
 
-      const txEntity = Transaction.create({
-        accountId: account.id,
-        type: TransactionType.WITHDRAW,
-        amount,
-        fee,
-        description: input.description,
-        idempotencyKey: input.idempotencyKey,
-      });
-
-      const newBalance = account.balance - total;
-      try {
-        await this.transactionRepository.create(txEntity, tx);
-      } catch (e) {
-        if (isUniqueError(e)) {
-          return {
-            transactionId: 'idempotent',
-            accountId: account.id.toValue(),
-            newBalance: account.balance,
-            feeApplied: 0,
-          };
-        }
-        throw e;
-      }
-      await this.ledgerRepository.append(
-        LedgerEntry.create({
+        const txEntity = Transaction.create({
           accountId: account.id,
-          transactionId: txEntity.id,
-          transferId: null,
-          debit: total,
-          credit: 0,
-          balanceAfter: newBalance,
-        }),
-        tx,
-      );
-      account.balance = newBalance;
-      await this.accountRepository.update(account, tx);
+          type: TransactionType.WITHDRAW,
+          amount,
+          fee,
+          description: input.description,
+          idempotencyKey: input.idempotencyKey,
+        });
 
-      const out = {
-        transactionId: txEntity.id.toValue(),
-        accountId: account.id.toValue(),
-        newBalance,
-        feeApplied: fee,
-      };
-      return out;
-    });
+        const newBalance = account.balance - total;
+        try {
+          await this.transactionRepository.create(txEntity, tx);
+        } catch (e) {
+          if (isUniqueError(e)) {
+            return {
+              transactionId: 'idempotent',
+              accountId: account.id.toValue(),
+              newBalance: account.balance,
+              feeApplied: 0,
+            };
+          }
+          throw e;
+        }
+        await this.ledgerRepository.append(
+          LedgerEntry.create({
+            accountId: account.id,
+            transactionId: txEntity.id,
+            transferId: null,
+            debit: total,
+            credit: 0,
+            balanceAfter: newBalance,
+          }),
+          tx,
+        );
+        account.balance = newBalance;
+        await this.accountRepository.update(account, tx);
+
+        const out = {
+          transactionId: txEntity.id.toValue(),
+          accountId: account.id.toValue(),
+          newBalance,
+          feeApplied: fee,
+        };
+        return out;
+      }),
+    );
   }
 
   async transfer(input: {
@@ -170,110 +176,120 @@ export class AccountTransactionService {
       throw new transactionErrors.TransferAccountsMustDifferError();
 
     const amount = input.amount;
-    return this.uow.run(async (tx: UnitOfWorkTx) => {
-      const [from, to] = await Promise.all([
-        this.accountRepository.findById({ accountId: input.fromAccountId }, tx),
-        this.accountRepository.findById({ accountId: input.toAccountId }, tx),
-      ]);
-      if (!from || !to) throw new accountErrors.AccountNotFoundError();
+    return this.accountLock.withLocks(
+      [input.fromAccountId, input.toAccountId],
+      async () =>
+        this.uow.run(async (tx: UnitOfWorkTx) => {
+          const [from, to] = await Promise.all([
+            this.accountRepository.findById(
+              { accountId: input.fromAccountId },
+              tx,
+            ),
+            this.accountRepository.findById(
+              { accountId: input.toAccountId },
+              tx,
+            ),
+          ]);
+          if (!from || !to) throw new accountErrors.AccountNotFoundError();
 
-      const policy = await this.feePolicyRepository.findActiveByType(
-        { transactionType: TransactionType.TRANSFER, at: new Date() },
-        tx,
-      );
-      const fee = policy ? policy.calculate(amount) : 0;
-      const total = amount + fee;
-      const available = from.balance + from.creditLimit;
-      if (available < total)
-        throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
+          const policy = await this.feePolicyRepository.findActiveByType(
+            { transactionType: TransactionType.TRANSFER, at: new Date() },
+            tx,
+          );
+          const fee = policy ? policy.calculate(amount) : 0;
+          const total = amount + fee;
+          const available = from.balance + from.creditLimit;
+          if (available < total)
+            throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
 
-      const transfer = Transfer.create({
-        fromAccountId: from.id,
-        toAccountId: to.id,
-        amount,
-        feeFrom: fee,
-        idempotencyKey: input.idempotencyKey,
-      });
-      try {
-        await this.transferRepository.create(transfer, tx);
-      } catch (e) {
-        if (isUniqueError(e)) {
-          return {
-            transferId: 'idempotent',
+          const transfer = Transfer.create({
+            fromAccountId: from.id,
+            toAccountId: to.id,
+            amount,
+            feeFrom: fee,
+            idempotencyKey: input.idempotencyKey,
+          });
+          try {
+            await this.transferRepository.create(transfer, tx);
+          } catch (e) {
+            if (isUniqueError(e)) {
+              return {
+                transferId: 'idempotent',
+                fromAccountId: from.id.toValue(),
+                toAccountId: to.id.toValue(),
+                fromNewBalance: from.balance,
+                toNewBalance: to.balance,
+                feeApplied: 0,
+              };
+            }
+            throw e;
+          }
+
+          const transactionFrom = Transaction.create({
+            accountId: from.id,
+            type: TransactionType.TRANSFER,
+            amount,
+            fee,
+            description: input.description,
+            relatedAccountId: to.id,
+            transferId: transfer.id,
+          });
+          const transactionTo = Transaction.create({
+            accountId: to.id,
+            type: TransactionType.TRANSFER,
+            amount,
+            fee: 0,
+            description: input.description,
+            relatedAccountId: from.id,
+            transferId: transfer.id,
+          });
+
+          const fromNewBalance = from.balance - total;
+          const toNewBalance = to.balance + amount;
+
+          await this.transactionRepository.create(transactionFrom, tx);
+          await this.transactionRepository.create(transactionTo, tx);
+
+          await this.ledgerRepository.append(
+            LedgerEntry.create({
+              accountId: from.id,
+              transactionId: transactionFrom.id,
+              transferId: transfer.id,
+              debit: total,
+              credit: 0,
+              balanceAfter: fromNewBalance,
+            }),
+            tx,
+          );
+          await this.ledgerRepository.append(
+            LedgerEntry.create({
+              accountId: to.id,
+              transactionId: transactionTo.id,
+              transferId: transfer.id,
+              debit: 0,
+              credit: amount,
+              balanceAfter: toNewBalance,
+            }),
+            tx,
+          );
+
+          from.balance = fromNewBalance;
+          to.balance = toNewBalance;
+          await Promise.all([
+            this.accountRepository.update(from, tx),
+            this.accountRepository.update(to, tx),
+          ]);
+
+          const out = {
+            transferId: transfer.id.toValue(),
             fromAccountId: from.id.toValue(),
             toAccountId: to.id.toValue(),
-            fromNewBalance: from.balance,
-            toNewBalance: to.balance,
-            feeApplied: 0,
+            fromNewBalance: fromNewBalance,
+            toNewBalance: toNewBalance,
+            feeApplied: fee,
           };
-        }
-        throw e;
-      }
-
-      const transactionFrom = Transaction.create({
-        accountId: from.id,
-        type: TransactionType.TRANSFER,
-        amount,
-        fee,
-        description: input.description,
-        relatedAccountId: to.id,
-        transferId: transfer.id,
-      });
-      const transactionTo = Transaction.create({
-        accountId: to.id,
-        type: TransactionType.TRANSFER,
-        amount,
-        fee: 0,
-        description: input.description,
-        relatedAccountId: from.id,
-        transferId: transfer.id,
-      });
-
-      const fromNewBalance = from.balance - total;
-      const toNewBalance = to.balance + amount;
-
-      await this.transactionRepository.create(transactionFrom, tx);
-      await this.transactionRepository.create(transactionTo, tx);
-
-      await this.ledgerRepository.append(
-        LedgerEntry.create({
-          accountId: from.id,
-          transactionId: transactionFrom.id,
-          transferId: transfer.id,
-          debit: total,
-          credit: 0,
-          balanceAfter: fromNewBalance,
+          return out;
         }),
-        tx,
-      );
-      await this.ledgerRepository.append(
-        LedgerEntry.create({
-          accountId: to.id,
-          transactionId: transactionTo.id,
-          transferId: transfer.id,
-          debit: 0,
-          credit: amount,
-          balanceAfter: toNewBalance,
-        }),
-        tx,
-      );
-
-      from.balance = fromNewBalance;
-      to.balance = toNewBalance;
-      await Promise.all([
-        this.accountRepository.update(from, tx),
-        this.accountRepository.update(to, tx),
-      ]);
-
-      const out = {
-        transferId: transfer.id.toValue(),
-        fromAccountId: from.id.toValue(),
-        toAccountId: to.id.toValue(),
-        fromNewBalance: fromNewBalance,
-        toNewBalance: toNewBalance,
-        feeApplied: fee,
-      };
-      return out;
-    });
+    );
   }
 }
