@@ -57,6 +57,31 @@ export class AppLoggingInterceptor implements NestInterceptor {
           return data;
         }),
         catchError((err) => {
+          // Preserve explicit HttpExceptions (e.g., 400/404) without rewriting to 500
+          if (err instanceof HttpException) {
+            const status =
+              err.getStatus?.() ?? HttpStatus.INTERNAL_SERVER_ERROR;
+            const isClientErr = status >= 400 && status < 500;
+            const log = isClientErr
+              ? this.logger.warn.bind(this.logger)
+              : this.logger.error.bind(this.logger);
+            log(
+              isClientErr ? 'Client error' : 'Server error',
+              (err as any)?.stack,
+              {
+                requestId,
+                className,
+                handlerName,
+                method,
+                path,
+                error: sanitizeData({
+                  name: (err as any)?.name,
+                  message: (err as any)?.message,
+                }),
+              },
+            );
+            return throwError(() => err);
+          }
           const known = classifyKnownError(err);
           if (known.isKnown) {
             this.logger.warn('Known error', {

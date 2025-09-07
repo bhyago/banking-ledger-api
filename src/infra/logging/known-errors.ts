@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { ZodValidationException } from 'nestjs-zod';
 import { accountErrors } from '@/modules/account/errors/account-errors';
 import { transactionErrors } from '@/modules/transaction/errors/transaction-errors';
 
@@ -21,6 +22,11 @@ export const KNOWN_ERRORS: KnownErrorInfo[] = [
   {
     match: transactionErrors.TransferAccountsMustDifferError,
     status: HttpStatus.BAD_REQUEST,
+  },
+  {
+    // Validation errors from nestjs-zod should be 422
+    match: ZodValidationException as unknown as new (...args: any[]) => Error,
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
   },
 ];
 
