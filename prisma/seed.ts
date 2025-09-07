@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TransactionType } from '@prisma/client';
+import { ulid } from 'ulid';
 
 const prisma = new PrismaClient();
 
@@ -7,19 +8,16 @@ async function main() {
   const now = new Date();
   const accounts = [
     {
-      id: 'acc-001',
       number: '100001',
       balanceCents: 100_00n,
       creditLimitCents: 0n,
     },
     {
-      id: 'acc-002',
       number: '100002',
       balanceCents: 500_00n,
       creditLimitCents: 200_00n,
     },
     {
-      id: 'acc-003',
       number: '100003',
       balanceCents: 0n,
       creditLimitCents: 1_000_00n,
@@ -28,22 +26,57 @@ async function main() {
 
   for (const a of accounts) {
     await prisma.account.upsert({
-      where: { id: a.id },
+      // Use unique account number for idempotency
+      where: { number: a.number },
       update: {
         balanceCents: a.balanceCents,
         creditLimitCents: a.creditLimitCents,
-        updatedAt: now,
       },
       create: {
-        id: a.id,
+        id: ulid(),
         number: a.number,
         balanceCents: a.balanceCents,
         creditLimitCents: a.creditLimitCents,
         createdAt: now,
-        updatedAt: now,
       },
     });
   }
+
+  // Seed Fee Policies (valid for a long window)
+  const startsAt = new Date(now.getFullYear() - 10, 0, 1);
+  const endsAt = new Date(now.getFullYear() + 10, 11, 31);
+
+  // Withdraw: flat 2.00, no percent
+  // Ensure a single default withdraw policy exists, with ULID id
+  await prisma.feePolicy.deleteMany({
+    where: { transactionType: TransactionType.WITHDRAW },
+  });
+  await prisma.feePolicy.create({
+    data: {
+      id: ulid(),
+      transactionType: TransactionType.WITHDRAW,
+      flatFeeCents: 200n,
+      percentBps: 0,
+      startsAt,
+      endsAt,
+    },
+  });
+
+  // Transfer: flat 1.00 + 0.5%
+  // Ensure a single default transfer policy exists, with ULID id
+  await prisma.feePolicy.deleteMany({
+    where: { transactionType: TransactionType.TRANSFER },
+  });
+  await prisma.feePolicy.create({
+    data: {
+      id: ulid(),
+      transactionType: TransactionType.TRANSFER,
+      flatFeeCents: 100n,
+      percentBps: 50,
+      startsAt,
+      endsAt,
+    },
+  });
 }
 
 main()
