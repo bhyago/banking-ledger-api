@@ -12,7 +12,7 @@ import {
   getAccountLedgerDTO,
   getAccountLedgerSchemaValidation,
 } from './dtos/get-account-ledger';
-import { GetAccountLedgerUseCase } from './usecases/get-account-ledger';
+import type { GetAccountLedgerUseCase } from './usecases/get-account-ledger';
 
 @ApiTags('ledger')
 @Controller('accounts')

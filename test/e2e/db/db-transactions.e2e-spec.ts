@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
@@ -17,7 +17,7 @@ async function waitFor<T>(
   intervalMs = 50,
 ): Promise<T> {
   const start = Date.now();
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     const v = await fn();
     if (predicate(v)) return v;
@@ -125,14 +125,12 @@ describe('Transactions + DB (E2E)', () => {
   });
 
   test('Transfer aplica no banco (debita A e credita B)', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/transfer')
-      .send({
-        fromAccountId: accA,
-        toAccountId: accB,
-        amount: 5,
-        description: 'tr db',
-      });
+    const res = await request(app.getHttpServer()).post('/transfer').send({
+      fromAccountId: accA,
+      toAccountId: accB,
+      amount: 5,
+      description: 'tr db',
+    });
     expect(res.statusCode).toBe(202);
 
     const a = await waitFor(

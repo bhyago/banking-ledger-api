@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GetAccountLedgerUseCase } from './get-account-ledger';
-import { PrismaService } from '@/infra/database/prisma/prisma.service';
+import type { PrismaService } from '@/infra/database/prisma/prisma.service';
 import { accountErrors } from '@/modules/account/errors/account-errors';
 
 const makePrisma = () => {

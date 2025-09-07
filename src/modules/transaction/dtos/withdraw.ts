@@ -1,4 +1,4 @@
-import { SchemaValidation } from '@/common/schema-validation-type';
+import type { SchemaValidation } from '@/common/schema-validation-type';
 import { ApiProperty } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';

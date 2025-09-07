@@ -1,14 +1,21 @@
 import {
-  CallHandler,
-  ExecutionContext,
+  type CallHandler,
+  type ExecutionContext,
   Injectable,
-  NestInterceptor,
+  type NestInterceptor,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Observable, catchError, finalize, map, of, throwError } from 'rxjs';
 import {
-  StructuredLoggerService,
+  type Observable,
+  catchError,
+  finalize,
+  map,
+  of,
+  throwError,
+} from 'rxjs';
+import {
+  type StructuredLoggerService,
   sanitizeData,
   extractErrorChain,
 } from './structured-logger.service';

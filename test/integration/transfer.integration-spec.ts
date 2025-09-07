@@ -8,12 +8,12 @@ import { TransactionRepository } from '@/modules/transaction/repositories/transa
 import { LedgerRepository } from '@/modules/transaction/repositories/ledger-repository';
 import { FeePolicyRepository } from '@/modules/transaction/repositories/fee-policy-repository';
 import { TransferRepository } from '@/modules/transaction/repositories/transfer-repository';
-import { UNIT_OF_WORK, UnitOfWork } from '@/common/uow';
+import { UNIT_OF_WORK, type UnitOfWork } from '@/common/uow';
 import { Account } from '@/modules/account/entities/account';
 import { UniqueEntityID } from '@/common/entities/unique-entity-id';
-import { Transaction } from '@/modules/transaction/entities/transaction';
-import { LedgerEntry } from '@/modules/transaction/entities/ledger-entry';
-import { Transfer } from '@/modules/transaction/entities/transfer';
+import type { Transaction } from '@/modules/transaction/entities/transaction';
+import type { LedgerEntry } from '@/modules/transaction/entities/ledger-entry';
+import type { Transfer } from '@/modules/transaction/entities/transfer';
 import { transactionErrors } from '@/modules/transaction/errors/transaction-errors';
 
 class InMemoryAccountRepository implements AccountRepository {

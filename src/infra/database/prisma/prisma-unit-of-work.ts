@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
-import { Prisma } from '@prisma/client';
-import { UnitOfWork, UnitOfWorkTx } from '@/common/uow';
+import type { PrismaService } from './prisma.service';
+import type { Prisma } from '@prisma/client';
+import type { UnitOfWork, UnitOfWorkTx } from '@/common/uow';
 
 @Injectable()
 export class PrismaTxAdapter implements UnitOfWorkTx {

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { TransferRepository } from '@/modules/transaction/repositories/transfer-repository';
-import { Transfer } from '@/modules/transaction/entities/transfer';
-import { UnitOfWorkTx } from '@/common/uow';
-import { PrismaTxAdapter } from '../prisma-unit-of-work';
+import type { PrismaService } from '../prisma.service';
+import type { TransferRepository } from '@/modules/transaction/repositories/transfer-repository';
+import type { Transfer } from '@/modules/transaction/entities/transfer';
+import type { UnitOfWorkTx } from '@/common/uow';
+import type { PrismaTxAdapter } from '../prisma-unit-of-work';
 import { PrismaTransferMapper } from '../mappers/transfer-mapper';
 
 @Injectable()

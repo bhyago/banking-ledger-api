@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { TransactionRepository } from '@/modules/transaction/repositories/transaction-repository';
-import { Transaction } from '@/modules/transaction/entities/transaction';
+import type { PrismaService } from '../prisma.service';
+import type { TransactionRepository } from '@/modules/transaction/repositories/transaction-repository';
+import type { Transaction } from '@/modules/transaction/entities/transaction';
 import { PrismaTransactionMapper } from '../mappers/transaction-mapper';
-import { UnitOfWorkTx } from '@/common/uow';
-import { PrismaTxAdapter } from '../prisma-unit-of-work';
+import type { UnitOfWorkTx } from '@/common/uow';
+import type { PrismaTxAdapter } from '../prisma-unit-of-work';
 
 @Injectable()
 export class PrismaTransactionRepository implements TransactionRepository {

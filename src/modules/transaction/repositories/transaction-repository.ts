@@ -1,5 +1,5 @@
-import { UnitOfWorkTx } from '@/common/uow';
-import { Transaction } from '../entities/transaction';
+import type { UnitOfWorkTx } from '@/common/uow';
+import type { Transaction } from '../entities/transaction';
 
 export abstract class TransactionRepository {
   abstract create(

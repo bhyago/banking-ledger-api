@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@/infra/database/prisma/prisma.service';
-import { getAccountTransactionsDTO } from '../dtos/get-account-transactions';
+import type { PrismaService } from '@/infra/database/prisma/prisma.service';
+import type { getAccountTransactionsDTO } from '../dtos/get-account-transactions';
 
 @Injectable()
 export class GetAccountTransactionsUseCase {

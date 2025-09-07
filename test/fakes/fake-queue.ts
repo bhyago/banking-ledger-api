@@ -1,8 +1,8 @@
-import {
+import type {
   SendMessageToQueueProvider,
   ISendMessageToQueueRequest,
 } from '@/contracts/rabbit-mq/send-message-to-queue';
-import {
+import type {
   ConsumeMessageFromQueueProvider,
   IStartQueueConsumerRequest,
 } from '@/contracts/rabbit-mq/consume-message-from-queue';

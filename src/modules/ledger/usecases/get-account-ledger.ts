@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { accountErrors } from '@/modules/account/errors/account-errors';
-import { getAccountLedgerDTO } from '../dtos/get-account-ledger';
-import { PrismaService } from '@/infra/database/prisma/prisma.service';
+import type { getAccountLedgerDTO } from '../dtos/get-account-ledger';
+import type { PrismaService } from '@/infra/database/prisma/prisma.service';
 
 @Injectable()
 export class GetAccountLedgerUseCase {

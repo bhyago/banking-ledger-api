@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { FeePolicyRepository } from '@/modules/transaction/repositories/fee-policy-repository';
-import { FeePolicy } from '@/modules/transaction/entities/fee-policy';
-import { TransactionType } from '@/modules/transaction/entities/enums';
-import { UnitOfWorkTx } from '@/common/uow';
-import { PrismaTxAdapter } from '../prisma-unit-of-work';
+import type { PrismaService } from '../prisma.service';
+import type { FeePolicyRepository } from '@/modules/transaction/repositories/fee-policy-repository';
+import type { FeePolicy } from '@/modules/transaction/entities/fee-policy';
+import type { TransactionType } from '@/modules/transaction/entities/enums';
+import type { UnitOfWorkTx } from '@/common/uow';
+import type { PrismaTxAdapter } from '../prisma-unit-of-work';
 import { PrismaFeePolicyMapper } from '../mappers/fee-policy-mapper';
 
 @Injectable()

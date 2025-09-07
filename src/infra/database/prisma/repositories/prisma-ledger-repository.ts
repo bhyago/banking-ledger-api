@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { LedgerRepository } from '@/modules/transaction/repositories/ledger-repository';
-import { LedgerEntry } from '@/modules/transaction/entities/ledger-entry';
+import type { PrismaService } from '../prisma.service';
+import type { LedgerRepository } from '@/modules/transaction/repositories/ledger-repository';
+import type { LedgerEntry } from '@/modules/transaction/entities/ledger-entry';
 import { PrismaLedgerEntryMapper } from '../mappers/ledger-entry-mapper';
-import { UnitOfWorkTx } from '@/common/uow';
-import { PrismaTxAdapter } from '../prisma-unit-of-work';
+import type { UnitOfWorkTx } from '@/common/uow';
+import type { PrismaTxAdapter } from '../prisma-unit-of-work';
 
 @Injectable()
 export class PrismaLedgerRepository implements LedgerRepository {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GetAccountByIdUseCase } from './get-account-by-id';
-import { AccountRepository } from '../repositories/account-repository';
+import type { AccountRepository } from '../repositories/account-repository';
 import { accountErrors } from '../errors/account-errors';
 
 const makeAccountRepository = (accountMock: any = null) => {

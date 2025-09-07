@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { AccountRepository } from '@/modules/account/repositories/account-repository';
-import { Account } from '@/modules/account/entities/account';
+import type { PrismaService } from '../prisma.service';
+import type { AccountRepository } from '@/modules/account/repositories/account-repository';
+import type { Account } from '@/modules/account/entities/account';
 import { PrismaAccountMapper } from '../mappers/account-mapper';
 
 @Injectable()

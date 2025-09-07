@@ -7,14 +7,14 @@ import {
   HttpStatus,
   Body,
 } from '@nestjs/common';
-import { CreateAccountUseCase } from './usecases/create-account';
+import type { CreateAccountUseCase } from './usecases/create-account';
 import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { createAccountDTO } from './dtos/create-account';
 import {
-  getAccountByIdDTO,
+  type getAccountByIdDTO,
   getAccountByIdSchemaValidation,
 } from './dtos/get-account-by-id';
-import { GetAccountByIdUseCase } from './usecases/get-account-by-id';
+import type { GetAccountByIdUseCase } from './usecases/get-account-by-id';
 import { ZodValidationPipe } from 'nestjs-zod';
 
 @ApiTags('account')

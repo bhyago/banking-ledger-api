@@ -1,4 +1,4 @@
-import { Prisma, Transfer as PrismaTransfer } from '@prisma/client';
+import type { Prisma, Transfer as PrismaTransfer } from '@prisma/client';
 import { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { Transfer } from '@/modules/transaction/entities/transfer';
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { AccountRepository } from '../repositories/account-repository';
-import { getAccountByIdDTO } from '../dtos/get-account-by-id';
+import type { AccountRepository } from '../repositories/account-repository';
+import type { getAccountByIdDTO } from '../dtos/get-account-by-id';
 import { accountErrors } from '../errors/account-errors';
 
 @Injectable()

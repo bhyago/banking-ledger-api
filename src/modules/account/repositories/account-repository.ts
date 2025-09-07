@@ -1,5 +1,5 @@
-import { UnitOfWorkTx } from '@/common/uow';
-import { Account } from '../entities/account';
+import type { UnitOfWorkTx } from '@/common/uow';
+import type { Account } from '../entities/account';
 
 export abstract class AccountRepository {
   abstract save(input: Account): Promise<{ id: string }>;

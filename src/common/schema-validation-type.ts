@@ -1,4 +1,4 @@
-import { z, ZodTypeAny } from 'zod';
+import { z, type ZodTypeAny } from 'zod';
 
 export type SchemaValidation<
   TBody extends ZodTypeAny = ZodTypeAny,

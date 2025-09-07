@@ -1,7 +1,7 @@
 import { Entity } from '@/common/entities/entity';
-import { UniqueEntityID } from '@/common/entities/unique-entity-id';
+import type { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { DateTime } from 'luxon';
-import { TransactionStatus, TransactionType } from './enums';
+import { TransactionStatus, type TransactionType } from './enums';
 
 export interface TransactionProps {
   accountId: UniqueEntityID;

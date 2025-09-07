@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
@@ -16,7 +16,7 @@ async function waitUntil(
   step = 50,
 ) {
   const start = Date.now();
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     if (await predicate()) return;
     if (Date.now() - start > timeoutMs) return;

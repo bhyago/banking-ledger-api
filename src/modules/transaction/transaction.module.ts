@@ -1,4 +1,8 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import {
+  type MiddlewareConsumer,
+  Module,
+  type NestModule,
+} from '@nestjs/common';
 import { DatabaseModule } from '@/infra/database/database.module';
 import { TransactionController } from './transaction.controller';
 import { DepositUseCase } from './usecases/deposit';

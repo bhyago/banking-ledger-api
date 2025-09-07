@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { AccountTransactionService } from '../services/account-transaction.service';
-import { withdrawDTO } from '../dtos/withdraw';
+import type { AccountTransactionService } from '../services/account-transaction.service';
+import type { withdrawDTO } from '../dtos/withdraw';
 import { OnEvent } from '@nestjs/event-emitter';
 import { QUEUES } from '../async/messages';
-import { ProcessBatchAccountTransactionsUseCase } from './process-batch-account-transactions';
+import type { ProcessBatchAccountTransactionsUseCase } from './process-batch-account-transactions';
 
 @Injectable()
 export class WithdrawUseCase {

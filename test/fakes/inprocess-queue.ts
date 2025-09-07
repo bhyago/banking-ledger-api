@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
+import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type {
   ISendMessageToQueueRequest,
   SendMessageToQueueProvider,
 } from '@/contracts/rabbit-mq/send-message-to-queue';

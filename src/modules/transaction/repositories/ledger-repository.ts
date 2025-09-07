@@ -1,5 +1,5 @@
-import { LedgerEntry } from '../entities/ledger-entry';
-import { UnitOfWorkTx } from '@/common/uow';
+import type { LedgerEntry } from '../entities/ledger-entry';
+import type { UnitOfWorkTx } from '@/common/uow';
 
 export abstract class LedgerRepository {
   abstract append(

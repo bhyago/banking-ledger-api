@@ -1,6 +1,6 @@
-import { FeePolicy } from '../entities/fee-policy';
-import { TransactionType } from '../entities/enums';
-import { UnitOfWorkTx } from '@/common/uow';
+import type { FeePolicy } from '../entities/fee-policy';
+import type { TransactionType } from '../entities/enums';
+import type { UnitOfWorkTx } from '@/common/uow';
 
 export abstract class FeePolicyRepository {
   abstract findActiveByType(

@@ -1,6 +1,4 @@
-export interface UnitOfWorkTx {
-  // Opaque transaction token
-}
+export type UnitOfWorkTx = {};
 
 export interface UnitOfWork {
   run<T>(fn: (tx: UnitOfWorkTx) => Promise<T>): Promise<T>;

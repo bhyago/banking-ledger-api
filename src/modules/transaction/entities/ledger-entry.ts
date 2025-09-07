@@ -1,5 +1,5 @@
 import { Entity } from '@/common/entities/entity';
-import { UniqueEntityID } from '@/common/entities/unique-entity-id';
+import type { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { DateTime } from 'luxon';
 
 export interface LedgerEntryProps {

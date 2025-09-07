@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AccountTransactionService } from './account-transaction.service';
-import { UnitOfWork } from '@/common/uow';
-import { AccountRepository } from '@/modules/account/repositories/account-repository';
-import { TransactionRepository } from '../repositories/transaction-repository';
-import { LedgerRepository } from '../repositories/ledger-repository';
-import { FeePolicyRepository } from '../repositories/fee-policy-repository';
-import { TransferRepository } from '../repositories/transfer-repository';
+import type { UnitOfWork } from '@/common/uow';
+import type { AccountRepository } from '@/modules/account/repositories/account-repository';
+import type { TransactionRepository } from '../repositories/transaction-repository';
+import type { LedgerRepository } from '../repositories/ledger-repository';
+import type { FeePolicyRepository } from '../repositories/fee-policy-repository';
+import type { TransferRepository } from '../repositories/transfer-repository';
 import { Account } from '@/modules/account/entities/account';
 import { Transaction } from '../entities/transaction';
 import { LedgerEntry } from '../entities/ledger-entry';

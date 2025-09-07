@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CreateAccountUseCase } from './create-account';
-import { AccountRepository } from '../repositories/account-repository';
+import type { AccountRepository } from '../repositories/account-repository';
 import { Account } from '../entities/account';
 
 const makeAccountRepository = () => {

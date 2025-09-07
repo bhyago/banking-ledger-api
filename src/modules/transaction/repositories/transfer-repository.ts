@@ -1,5 +1,5 @@
-import { Transfer } from '../entities/transfer';
-import { UnitOfWorkTx } from '@/common/uow';
+import type { Transfer } from '../entities/transfer';
+import type { UnitOfWorkTx } from '@/common/uow';
 
 export abstract class TransferRepository {
   abstract create(input: Transfer, tx?: UnitOfWorkTx): Promise<{ id: string }>;

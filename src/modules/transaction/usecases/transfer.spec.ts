@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TransferUseCase } from './transfer';
-import { AccountTransactionService } from '../services/account-transaction.service';
-import { ProcessBatchTransfersUseCase } from './process-batch-transfers';
+import type { AccountTransactionService } from '../services/account-transaction.service';
+import type { ProcessBatchTransfersUseCase } from './process-batch-transfers';
 import { transactionErrors } from '../errors/transaction-errors';
 
 const makeTxService = () => {

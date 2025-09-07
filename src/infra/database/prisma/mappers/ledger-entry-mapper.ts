@@ -1,5 +1,5 @@
-import { Prisma, LedgerEntry as PrismaLedger } from '@prisma/client';
-import { LedgerEntry } from '@/modules/transaction/entities/ledger-entry';
+import { type Prisma, LedgerEntry as PrismaLedger } from '@prisma/client';
+import type { LedgerEntry } from '@/modules/transaction/entities/ledger-entry';
 
 export class PrismaLedgerEntryMapper {
   static toPrisma(entity: LedgerEntry): Prisma.LedgerEntryUncheckedCreateInput {

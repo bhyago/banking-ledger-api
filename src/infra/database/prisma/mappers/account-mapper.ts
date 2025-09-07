@@ -1,4 +1,4 @@
-import { Prisma, Account as AccountPrisma } from '@prisma/client';
+import type { Prisma, Account as AccountPrisma } from '@prisma/client';
 import { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { Account } from '@/modules/account/entities/account';
 
