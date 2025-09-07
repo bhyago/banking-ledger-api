@@ -9,7 +9,7 @@ export const createAccountSchemaValidation = {
 } satisfies SchemaValidation;
 
 export namespace createAccountDTO {
-  export class Output extends createZodDto(
+  export class CreateAccountOutput extends createZodDto(
     createAccountSchemaValidation.response,
   ) {}
 }

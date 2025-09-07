@@ -10,10 +10,10 @@ export class TransferUseCase {
 
   @OnEvent(QUEUES.transfer, { async: true })
   async execute(
-    input: transferDTO.Input | transferDTO.Input[],
-  ): Promise<transferDTO.Output | transferDTO.Output[]> {
+    input: transferDTO.TransferInput | transferDTO.TransferInput[],
+  ): Promise<transferDTO.TransferOutput | transferDTO.TransferOutput[]> {
     const items = Array.isArray(input) ? input : [input];
-    const results: transferDTO.Output[] = [];
+    const results: transferDTO.TransferOutput[] = [];
     for (const it of items) {
       const anyIt: any = it as any;
       const result = await this.txService.transfer({

@@ -8,8 +8,8 @@ export class GetAccountLedgerUseCase {
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(
-    input: getAccountLedgerDTO.Input,
-  ): Promise<getAccountLedgerDTO.Output> {
+    input: getAccountLedgerDTO.GetAccountLedgerInput,
+  ): Promise<getAccountLedgerDTO.GetAccountLedgerOutput> {
     const account = await this.prisma.account.findUnique({
       where: { id: input.accountId },
     });

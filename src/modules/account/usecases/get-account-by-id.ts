@@ -8,8 +8,8 @@ export class GetAccountByIdUseCase {
   constructor(private readonly accountRepository: AccountRepository) {}
 
   async execute(
-    input: getAccountByIdDTO.Input,
-  ): Promise<getAccountByIdDTO.Output> {
+    input: getAccountByIdDTO.GetAccountByIdInput,
+  ): Promise<getAccountByIdDTO.GetAccountByIdOutput> {
     const account = await this.accountRepository.findById({
       accountId: input.accountId,
     });

@@ -23,7 +23,7 @@ export class TransferController {
   @ApiResponse({ status: HttpStatus.ACCEPTED })
   async transfer(
     @Body(new ZodValidationPipe(transferSchemaValidation.body))
-    body: transferDTO.BodyDTO,
+    body: transferDTO.TransferBodyDTO,
     @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<{ queued: true; id: string; queuedAt: Date }> {
     const id = idempotencyKey || randomUUID();

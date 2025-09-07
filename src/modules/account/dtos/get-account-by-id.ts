@@ -15,19 +15,19 @@ export const getAccountByIdSchemaValidation = {
   }),
 } satisfies SchemaValidation;
 
-type GetAccountByIdParamsDTO = z.infer<
+type GetAccountByIdParams = z.infer<
   typeof getAccountByIdSchemaValidation.params
 >;
 
 export namespace getAccountByIdDTO {
-  export class ParamsDTO implements GetAccountByIdParamsDTO {
+  export class GetAccountByIdParamsDTO implements GetAccountByIdParams {
     @ApiProperty({ required: true })
     accountId!: string;
   }
-  export class Input extends createZodDto(
+  export class GetAccountByIdInput extends createZodDto(
     getAccountByIdSchemaValidation.params,
   ) {}
-  export class Output extends createZodDto(
+  export class GetAccountByIdOutput extends createZodDto(
     getAccountByIdSchemaValidation.response,
   ) {}
 }

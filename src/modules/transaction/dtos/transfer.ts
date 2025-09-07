@@ -25,10 +25,10 @@ export const transferSchemaValidation = {
   }),
 } satisfies SchemaValidation;
 
-type TransferBodyDTO = z.infer<typeof transferSchemaValidation.body>;
+type TransferBody = z.infer<typeof transferSchemaValidation.body>;
 
 export namespace transferDTO {
-  export class BodyDTO implements TransferBodyDTO {
+  export class TransferBodyDTO implements TransferBody {
     @ApiProperty()
     fromAccountId!: string;
     @ApiProperty()
@@ -38,6 +38,10 @@ export namespace transferDTO {
     @ApiProperty({ required: false })
     description?: string;
   }
-  export class Input extends createZodDto(transferSchemaValidation.body) {}
-  export class Output extends createZodDto(transferSchemaValidation.response) {}
+  export class TransferInput extends createZodDto(
+    transferSchemaValidation.body,
+  ) {}
+  export class TransferOutput extends createZodDto(
+    transferSchemaValidation.response,
+  ) {}
 }

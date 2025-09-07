@@ -28,10 +28,10 @@ export const getAccountLedgerSchemaValidation = {
 } satisfies SchemaValidation;
 
 export namespace getAccountLedgerDTO {
-  export class Input extends createZodDto(
+  export class GetAccountLedgerInput extends createZodDto(
     getAccountLedgerSchemaValidation.params,
   ) {}
-  export class Output extends createZodDto(
+  export class GetAccountLedgerOutput extends createZodDto(
     getAccountLedgerSchemaValidation.response,
   ) {}
 }

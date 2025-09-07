@@ -7,7 +7,7 @@ import { Account } from '../entities/account';
 export class CreateAccountUseCase {
   constructor(private readonly accountRepository: AccountRepository) {}
 
-  async execute(): Promise<createAccountDTO.Output> {
+  async execute(): Promise<createAccountDTO.CreateAccountOutput> {
     const account = Account.create({});
     const savedAccount = await this.accountRepository.save(account);
 

@@ -28,13 +28,16 @@ export class LedgerController {
     description:
       'Retorna os lançamentos (razão) de uma conta com paginação e ordenação.',
   })
-  @ApiResponse({ status: HttpStatus.OK, type: getAccountLedgerDTO.Output })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: getAccountLedgerDTO.GetAccountLedgerOutput,
+  })
   async getLedger(
     @Param(new ZodValidationPipe(getAccountLedgerSchemaValidation.params))
-    param: getAccountLedgerDTO.ParamDTO,
+    param: getAccountLedgerDTO.GetAccountLedgerParamDTO,
     @Query(new ZodValidationPipe(getAccountLedgerSchemaValidation.queryParams))
-    query: getAccountLedgerDTO.QueryDTO,
-  ): Promise<getAccountLedgerDTO.Output> {
+    query: getAccountLedgerDTO.GetAccountLedgerQueryDTO,
+  ): Promise<getAccountLedgerDTO.GetAccountLedgerOutput> {
     return this.getAccountLedgerUseCase.execute({
       accountId: param.accountId,
       page: query.page,

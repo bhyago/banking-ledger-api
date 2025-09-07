@@ -32,9 +32,9 @@ export class AccountController {
   })
   @ApiCreatedResponse({
     description: 'Conta criada com sucesso',
-    type: createAccountDTO.Output,
+    type: createAccountDTO.CreateAccountOutput,
   })
-  async createAccount(): Promise<createAccountDTO.Output> {
+  async createAccount(): Promise<createAccountDTO.CreateAccountOutput> {
     return this.createAccountUseCase.execute();
   }
 
@@ -46,8 +46,8 @@ export class AccountController {
   })
   async getAccountById(
     @Param(new ZodValidationPipe(getAccountByIdSchemaValidation.params))
-    param: getAccountByIdDTO.ParamsDTO,
-  ): Promise<getAccountByIdDTO.Output> {
+    param: getAccountByIdDTO.GetAccountByIdParamsDTO,
+  ): Promise<getAccountByIdDTO.GetAccountByIdOutput> {
     return this.getAccountByIdUseCase.execute({ accountId: param.accountId });
   }
 }

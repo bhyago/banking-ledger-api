@@ -10,10 +10,10 @@ export class DepositUseCase {
 
   @OnEvent(QUEUES.deposit, { async: true })
   async execute(
-    input: depositDTO.Input | depositDTO.Input[],
-  ): Promise<depositDTO.Output | depositDTO.Output[]> {
+    input: depositDTO.DepositInput | depositDTO.DepositInput[],
+  ): Promise<depositDTO.DepositOutput | depositDTO.DepositOutput[]> {
     const items = Array.isArray(input) ? input : [input];
-    const results: depositDTO.Output[] = [];
+    const results: depositDTO.DepositOutput[] = [];
     for (const it of items) {
       const anyIt: any = it as any;
       const result = await this.txService.deposit({

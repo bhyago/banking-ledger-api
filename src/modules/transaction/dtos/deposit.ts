@@ -18,22 +18,24 @@ export const depositSchemaValidation = {
   }),
 } satisfies SchemaValidation;
 
-type DepositParamsDTO = z.infer<typeof depositSchemaValidation.params>;
-type DepositBodyDTO = z.infer<typeof depositSchemaValidation.body>;
+type DepositParams = z.infer<typeof depositSchemaValidation.params>;
+type DepositBody = z.infer<typeof depositSchemaValidation.body>;
 
 export namespace depositDTO {
-  export class ParamsDTO implements DepositParamsDTO {
+  export class DepositParamsDTO implements DepositParams {
     @ApiProperty({ required: true })
     accountId!: string;
   }
-  export class BodyDTO implements DepositBodyDTO {
+  export class DepositBodyDTO implements DepositBody {
     @ApiProperty({ required: true })
     amount!: number;
     @ApiProperty({ required: false })
     description?: string;
   }
-  export class Input extends createZodDto(
+  export class DepositInput extends createZodDto(
     depositSchemaValidation.body.merge(depositSchemaValidation.params),
   ) {}
-  export class Output extends createZodDto(depositSchemaValidation.response) {}
+  export class DepositOutput extends createZodDto(
+    depositSchemaValidation.response,
+  ) {}
 }

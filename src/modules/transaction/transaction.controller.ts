@@ -22,12 +22,15 @@ export class TransactionController {
 
   @Post('deposit')
   @HttpCode(HttpStatus.ACCEPTED)
-  @ApiResponse({ status: HttpStatus.ACCEPTED, type: depositDTO.Output })
+  @ApiResponse({
+    status: HttpStatus.ACCEPTED,
+    type: depositDTO.DepositOutput,
+  })
   async deposit(
     @Param(new ZodValidationPipe(depositSchemaValidation.params))
-    param: depositDTO.ParamsDTO,
+    param: depositDTO.DepositParamsDTO,
     @Body(new ZodValidationPipe(depositSchemaValidation.body))
-    body: depositDTO.BodyDTO,
+    body: depositDTO.DepositBodyDTO,
     @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<{ queued: true; id: string; queuedAt: Date }> {
     const id = idempotencyKey || randomUUID();
@@ -45,12 +48,15 @@ export class TransactionController {
 
   @Post('withdraw')
   @HttpCode(HttpStatus.ACCEPTED)
-  @ApiResponse({ status: HttpStatus.ACCEPTED, type: withdrawDTO.Output })
+  @ApiResponse({
+    status: HttpStatus.ACCEPTED,
+    type: withdrawDTO.WithdrawOutput,
+  })
   async withdraw(
     @Param(new ZodValidationPipe(withdrawSchemaValidation.params))
-    param: withdrawDTO.ParamsDTO,
+    param: withdrawDTO.WithdrawParamsDTO,
     @Body(new ZodValidationPipe(withdrawSchemaValidation.body))
-    body: withdrawDTO.BodyDTO,
+    body: withdrawDTO.WithdrawBodyDTO,
     @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<{ queued: true; id: string; queuedAt: Date }> {
     const id = idempotencyKey || randomUUID();

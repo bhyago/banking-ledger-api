@@ -19,24 +19,26 @@ export const withdrawSchemaValidation = {
   }),
 } satisfies SchemaValidation;
 
-type WithdrawParamsDTO = z.infer<typeof withdrawSchemaValidation.params>;
-type WithdrawBodyDTO = z.infer<typeof withdrawSchemaValidation.body>;
+type WithdrawParams = z.infer<typeof withdrawSchemaValidation.params>;
+type WithdrawBody = z.infer<typeof withdrawSchemaValidation.body>;
 
 export namespace withdrawDTO {
-  export class ParamsDTO implements WithdrawParamsDTO {
+  export class WithdrawParamsDTO implements WithdrawParams {
     @ApiProperty({ required: true })
     accountId!: string;
   }
-  export class BodyDTO implements WithdrawBodyDTO {
+  export class WithdrawBodyDTO implements WithdrawBody {
     @ApiProperty({ required: true })
     amount!: number;
     @ApiProperty({ required: false })
     description?: string;
   }
 
-  export class Input extends createZodDto(
+  export class WithdrawInput extends createZodDto(
     withdrawSchemaValidation.body.merge(withdrawSchemaValidation.params),
   ) {}
 
-  export class Output extends createZodDto(withdrawSchemaValidation.response) {}
+  export class WithdrawOutput extends createZodDto(
+    withdrawSchemaValidation.response,
+  ) {}
 }

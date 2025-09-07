@@ -10,10 +10,10 @@ export class WithdrawUseCase {
 
   @OnEvent(QUEUES.withdraw, { async: true })
   async execute(
-    input: withdrawDTO.Input | withdrawDTO.Input[],
-  ): Promise<withdrawDTO.Output | withdrawDTO.Output[]> {
+    input: withdrawDTO.WithdrawInput | withdrawDTO.WithdrawInput[],
+  ): Promise<withdrawDTO.WithdrawOutput | withdrawDTO.WithdrawOutput[]> {
     const items = Array.isArray(input) ? input : [input];
-    const results: withdrawDTO.Output[] = [];
+    const results: withdrawDTO.WithdrawOutput[] = [];
     for (const it of items) {
       const anyIt: any = it as any;
       const result = await this.txService.withdraw({
