@@ -21,10 +21,12 @@ describe('CreateAccountUseCase', () => {
   });
 
   it('should create and save an account, returning its id', async () => {
-    const result = await useCase.execute();
+    const result = await useCase.execute({ creditLimit: 123.45 } as any);
     expect(result).toHaveProperty('accountId', 'mock-id');
     expect(accountRepository.save).toHaveBeenCalledOnce();
     const savedAccount = (accountRepository.save as any).mock.calls[0][0];
     expect(savedAccount).toBeInstanceOf(Account);
+    // creditLimit should be applied
+    expect(savedAccount.creditLimit).toBe(123.45);
   });
 });

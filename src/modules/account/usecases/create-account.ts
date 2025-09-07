@@ -7,8 +7,15 @@ import { Account } from '../entities/account';
 export class CreateAccountUseCase {
   constructor(private readonly accountRepository: AccountRepository) {}
 
-  async execute(): Promise<createAccountDTO.CreateAccountOutput> {
-    const account = Account.create({});
+  async execute(
+    input: createAccountDTO.CreateAccountInput,
+  ): Promise<createAccountDTO.CreateAccountOutput> {
+    const account = Account.create({
+      creditLimit: input?.creditLimit ?? 0,
+    });
+    if (typeof input?.creditLimit === 'number' && input.creditLimit >= 0) {
+      account.creditLimit = input.creditLimit;
+    }
     const savedAccount = await this.accountRepository.save(account);
 
     return {
