@@ -19,6 +19,9 @@
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run -c vitest.config.e2e.ts",
     "test:e2e:db": "pnpm prisma:generate && pnpm prisma:migrate && pnpm prisma:seed && vitest run -c vitest.config.e2e.db.ts",
+    "docker:up": "docker compose up -d postgres rabbitmq api",
+    "docker:db:bootstrap": "docker compose run --rm db-bootstrap",
+    "docker:down": "docker compose down -v",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
@@ -26,7 +29,7 @@
   },
   "prisma": {
     "schema": "./prisma",
-    "seed": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
@@ -49,6 +52,7 @@
     "zod-validation-error": "^3.5.2"
   },
   "devDependencies": {
+    "prisma": "^6.10.1",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/eslintrc": "^3.2.0",
