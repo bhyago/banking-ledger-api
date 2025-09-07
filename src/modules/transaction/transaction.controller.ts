@@ -6,6 +6,8 @@ import {
   HttpStatus,
   Param,
   Post,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -14,11 +16,19 @@ import { withdrawDTO, withdrawSchemaValidation } from './dtos/withdraw';
 import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
 import { randomUUID } from 'crypto';
 import { QUEUES } from './async/messages';
+import {
+  getAccountTransactionsDTO,
+  getAccountTransactionsSchemaValidation,
+} from './dtos/get-account-transactions';
+import { GetAccountTransactionsUseCase } from './usecases/get-account-transactions';
 
 @ApiTags('transactions')
 @Controller('transactions/:accountId')
 export class TransactionController {
-  constructor(private readonly queueSender: SendMessageToQueueProvider) {}
+  constructor(
+    private readonly queueSender: SendMessageToQueueProvider,
+    private readonly getAccountTransactionsUseCase: GetAccountTransactionsUseCase,
+  ) {}
 
   @Post('deposit')
   @HttpCode(HttpStatus.ACCEPTED)
@@ -70,5 +80,25 @@ export class TransactionController {
       },
     });
     return { queued: true, id, queuedAt: new Date() };
+  }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({ status: HttpStatus.OK })
+  async listTransactions(
+    @Param(new ZodValidationPipe(getAccountTransactionsSchemaValidation.params))
+    param: getAccountTransactionsDTO.GetAccountTransactionsParams,
+    @Query(
+      new ZodValidationPipe(getAccountTransactionsSchemaValidation.queryParams),
+    )
+    query: getAccountTransactionsDTO.GetAccountTransactionsQuery,
+  ): Promise<getAccountTransactionsDTO.GetAccountTransactionsOutput> {
+    return this.getAccountTransactionsUseCase.execute({
+      accountId: param.accountId,
+      page: (query as any).page,
+      perPage: (query as any).perPage,
+      order: (query as any).order,
+      status: (query as any).status,
+    } as any);
   }
 }

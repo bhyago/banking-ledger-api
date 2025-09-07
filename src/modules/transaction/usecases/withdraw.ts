@@ -3,30 +3,48 @@ import { AccountTransactionService } from '../services/account-transaction.servi
 import { withdrawDTO } from '../dtos/withdraw';
 import { OnEvent } from '@nestjs/event-emitter';
 import { QUEUES } from '../async/messages';
+import { ProcessBatchAccountTransactionsUseCase } from './process-batch-account-transactions';
 
 @Injectable()
 export class WithdrawUseCase {
-  constructor(private readonly txService: AccountTransactionService) {}
+  constructor(
+    private readonly txService: AccountTransactionService,
+    private readonly batchUseCase: ProcessBatchAccountTransactionsUseCase,
+  ) {}
 
   @OnEvent(QUEUES.withdraw, { async: true })
   async execute(
     input: withdrawDTO.WithdrawInput | withdrawDTO.WithdrawInput[],
   ): Promise<withdrawDTO.WithdrawOutput | withdrawDTO.WithdrawOutput[]> {
     const items = Array.isArray(input) ? input : [input];
-    const results: withdrawDTO.WithdrawOutput[] = [];
+    const groups = new Map<string, withdrawDTO.WithdrawInput[]>();
     for (const it of items) {
-      const anyIt: any = it as any;
-      const result = await this.txService.withdraw({
-        ...it,
-        idempotencyKey: anyIt.id ?? anyIt.idempotencyKey,
-      });
-      results.push({
-        transactionId: result.transactionId,
-        accountId: result.accountId,
-        newBalance: result.newBalance,
-        feeApplied: result.feeApplied,
-      });
+      const list = groups.get(it.accountId) ?? [];
+      list.push(it as any);
+      groups.set(it.accountId, list);
     }
-    return Array.isArray(input) ? results : results[0];
+
+    const outputs: withdrawDTO.WithdrawOutput[] = [];
+    for (const [accountId, group] of groups.entries()) {
+      const batch = await this.batchUseCase.execute({
+        accountId,
+        items: group.map((g) => ({
+          type: 'WITHDRAW' as const,
+          amount: g.amount,
+          description: g.description,
+        })),
+      });
+      for (const r of batch.results) {
+        if (r.type === 'WITHDRAW') {
+          outputs.push({
+            transactionId: r.transactionId,
+            accountId: r.accountId,
+            newBalance: r.newBalance,
+            feeApplied: r.feeApplied,
+          } as any);
+        }
+      }
+    }
+    return Array.isArray(input) ? outputs : outputs[0];
   }
 }

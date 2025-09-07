@@ -10,6 +10,9 @@ import { QueueModule } from '@/infra/queue/queue.module';
 import { TransactionQueueBootstrap } from './async/queue-bootstrap';
 import { IdempotencyKeyMiddleware } from '@/infra/http/middlewares/idempotency-key.middleware';
 import { AccountLockService } from '@/common/concurrency/account-lock.service';
+import { GetAccountTransactionsUseCase } from './usecases/get-account-transactions';
+import { ProcessBatchAccountTransactionsUseCase } from './usecases/process-batch-account-transactions';
+import { ProcessBatchTransfersUseCase } from './usecases/process-batch-transfers';
 
 @Module({
   imports: [DatabaseModule, QueueModule],
@@ -21,6 +24,9 @@ import { AccountLockService } from '@/common/concurrency/account-lock.service';
     TransferUseCase,
     TransactionQueueBootstrap,
     AccountLockService,
+    GetAccountTransactionsUseCase,
+    ProcessBatchAccountTransactionsUseCase,
+    ProcessBatchTransfersUseCase,
   ],
   exports: [],
 })

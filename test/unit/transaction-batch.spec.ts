@@ -3,6 +3,8 @@ import { DepositUseCase } from '@/modules/transaction/usecases/deposit';
 import { WithdrawUseCase } from '@/modules/transaction/usecases/withdraw';
 import { TransferUseCase } from '@/modules/transaction/usecases/transfer';
 import { AccountTransactionService } from '@/modules/transaction/services/account-transaction.service';
+import { ProcessBatchAccountTransactionsUseCase } from '@/modules/transaction/usecases/process-batch-account-transactions';
+import { ProcessBatchTransfersUseCase } from '@/modules/transaction/usecases/process-batch-transfers';
 
 class FakeTxService {
   async deposit(input: any) {
@@ -38,6 +40,26 @@ describe('Usecases batch execution', () => {
       providers: [
         DepositUseCase,
         { provide: AccountTransactionService, useClass: FakeTxService },
+        {
+          provide: ProcessBatchAccountTransactionsUseCase,
+          useValue: {
+            execute: async (input: any) => ({
+              accountId: input.accountId,
+              applied: input.items.length,
+              finalBalance: 0,
+              results: input.items.map((it: any, idx: number) => ({
+                type: 'DEPOSIT',
+                transactionId: `tx-${idx}`,
+                accountId: input.accountId,
+                newBalance: 100 + it.amount,
+              })),
+            }),
+          },
+        },
+        {
+          provide: ProcessBatchTransfersUseCase,
+          useValue: { execute: async () => ({}) },
+        },
       ],
     }).compile();
 
@@ -55,6 +77,27 @@ describe('Usecases batch execution', () => {
       providers: [
         WithdrawUseCase,
         { provide: AccountTransactionService, useClass: FakeTxService },
+        {
+          provide: ProcessBatchAccountTransactionsUseCase,
+          useValue: {
+            execute: async (input: any) => ({
+              accountId: input.accountId,
+              applied: input.items.length,
+              finalBalance: 0,
+              results: input.items.map((it: any, idx: number) => ({
+                type: 'WITHDRAW',
+                transactionId: `txw-${idx}`,
+                accountId: input.accountId,
+                newBalance: 100 - it.amount,
+                feeApplied: 0,
+              })),
+            }),
+          },
+        },
+        {
+          provide: ProcessBatchTransfersUseCase,
+          useValue: { execute: async () => ({}) },
+        },
       ],
     }).compile();
 
@@ -72,6 +115,28 @@ describe('Usecases batch execution', () => {
       providers: [
         TransferUseCase,
         { provide: AccountTransactionService, useClass: FakeTxService },
+        {
+          provide: ProcessBatchAccountTransactionsUseCase,
+          useValue: { execute: async () => ({}) },
+        },
+        {
+          provide: ProcessBatchTransfersUseCase,
+          useValue: {
+            execute: async (input: any) => ({
+              fromAccountId: input.fromAccountId,
+              toAccountId: input.toAccountId,
+              applied: input.items.length,
+              results: input.items.map((it: any, idx: number) => ({
+                transferId: `tr-${idx}`,
+                fromAccountId: input.fromAccountId,
+                toAccountId: input.toAccountId,
+                fromNewBalance: 100 - it.amount,
+                toNewBalance: 100 + it.amount,
+                feeApplied: 0,
+              })),
+            }),
+          },
+        },
       ],
     }).compile();
 

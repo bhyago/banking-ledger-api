@@ -290,7 +290,7 @@ describe('AccountTransactionService.withdraw', () => {
     expect(result.feeApplied).toBe(0);
   });
 
-  it('should throw when available (balance+limit) < amount+fee', async () => {
+  it('should throw when available (balance+limit) < amount+fee and record REJECTED', async () => {
     const accountId = new UniqueEntityID('acc-w3');
     const account = Account.create({}, accountId);
     account.balance = 50;
@@ -313,7 +313,13 @@ describe('AccountTransactionService.withdraw', () => {
       transactionErrors.InsufficientFundsConsideringCreditLimitError,
     );
 
-    expect(transactionRepository.create).not.toHaveBeenCalled();
+    expect(transactionRepository.create).toHaveBeenCalledOnce();
+    const created: Transaction = (transactionRepository.create as any).mock
+      .calls[0][0];
+    expect(created.type).toBe(TransactionType.WITHDRAW);
+    expect(created.status).toBe('REJECTED');
+    expect(created.amount).toBe(56);
+    expect(created.fee).toBe(5);
     expect(ledgerRepository.append).not.toHaveBeenCalled();
     expect(accountRepository.update).not.toHaveBeenCalled();
   });
@@ -555,7 +561,7 @@ describe('AccountTransactionService.transfer', () => {
     ).rejects.toBeInstanceOf(accountErrors.AccountNotFoundError);
   });
 
-  it('should throw when available of from < amount + fee', async () => {
+  it('should throw when available of from < amount + fee and record REJECTED', async () => {
     const from = Account.create({}, new UniqueEntityID('acc-t6'));
     const to = Account.create({}, new UniqueEntityID('acc-t7'));
     from.balance = 20;
@@ -590,7 +596,12 @@ describe('AccountTransactionService.transfer', () => {
     );
 
     expect(transferRepository.create).not.toHaveBeenCalled();
-    expect(transactionRepository.create).not.toHaveBeenCalled();
+    expect(transactionRepository.create).toHaveBeenCalledOnce();
+    const created: Transaction = (transactionRepository.create as any).mock
+      .calls[0][0];
+    expect(created.type).toBe(TransactionType.TRANSFER);
+    expect(created.status).toBe('REJECTED');
+    expect(created.amount).toBe(16);
     expect(ledgerRepository.append).not.toHaveBeenCalled();
     expect(accountRepository.update).not.toHaveBeenCalled();
   });

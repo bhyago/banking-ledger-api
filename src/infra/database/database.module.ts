@@ -40,6 +40,7 @@ import { PrismaTransferRepository } from './prisma/repositories/prisma-transfer-
     },
   ],
   exports: [
+    PrismaService,
     AccountRepository,
     LedgerRepository,
     TransactionRepository,

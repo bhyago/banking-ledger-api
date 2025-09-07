@@ -126,8 +126,24 @@ export class AccountTransactionService {
         const fee = policy ? policy.calculate(amount) : 0;
         const total = amount + fee;
         const available = account.balance + account.creditLimit;
-        if (available < total)
+        if (available < total) {
+          // Record a rejected transaction attempt (no ledger changes)
+          try {
+            const rejected = Transaction.createRejected({
+              accountId: account.id,
+              type: TransactionType.WITHDRAW,
+              amount,
+              fee,
+              description: input.description,
+              idempotencyKey: input.idempotencyKey,
+            });
+            await this.transactionRepository.create(rejected, tx);
+          } catch (e) {
+            // swallow unique errors for idempotent duplicates
+            if (!isUniqueError(e)) throw e;
+          }
           throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
+        }
 
         const txEntity = Transaction.create({
           accountId: account.id,
@@ -223,8 +239,22 @@ export class AccountTransactionService {
           const fee = policy ? policy.calculate(amount) : 0;
           const total = amount + fee;
           const available = from.balance + from.creditLimit;
-          if (available < total)
+          if (available < total) {
+            try {
+              const rejected = Transaction.createRejected({
+                accountId: from.id,
+                type: TransactionType.TRANSFER,
+                amount,
+                fee,
+                description: input.description,
+                idempotencyKey: input.idempotencyKey,
+              });
+              await this.transactionRepository.create(rejected, tx);
+            } catch (e) {
+              if (!isUniqueError(e)) throw e;
+            }
             throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
+          }
 
           const transfer = Transfer.create({
             fromAccountId: from.id,

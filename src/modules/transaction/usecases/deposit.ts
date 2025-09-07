@@ -3,29 +3,47 @@ import { depositDTO } from '../dtos/deposit';
 import { AccountTransactionService } from '../services/account-transaction.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { QUEUES } from '../async/messages';
+import { ProcessBatchAccountTransactionsUseCase } from './process-batch-account-transactions';
 
 @Injectable()
 export class DepositUseCase {
-  constructor(private readonly txService: AccountTransactionService) {}
+  constructor(
+    private readonly txService: AccountTransactionService,
+    private readonly batchUseCase: ProcessBatchAccountTransactionsUseCase,
+  ) {}
 
   @OnEvent(QUEUES.deposit, { async: true })
   async execute(
     input: depositDTO.DepositInput | depositDTO.DepositInput[],
   ): Promise<depositDTO.DepositOutput | depositDTO.DepositOutput[]> {
     const items = Array.isArray(input) ? input : [input];
-    const results: depositDTO.DepositOutput[] = [];
+    const groups = new Map<string, depositDTO.DepositInput[]>();
     for (const it of items) {
-      const anyIt: any = it as any;
-      const result = await this.txService.deposit({
-        ...it,
-        idempotencyKey: anyIt.id ?? anyIt.idempotencyKey,
-      });
-      results.push({
-        transactionId: result.transactionId,
-        accountId: result.accountId,
-        newBalance: result.newBalance,
-      });
+      const list = groups.get(it.accountId) ?? [];
+      list.push(it as any);
+      groups.set(it.accountId, list);
     }
-    return Array.isArray(input) ? results : results[0];
+
+    const outputs: depositDTO.DepositOutput[] = [];
+    for (const [accountId, group] of groups.entries()) {
+      const batch = await this.batchUseCase.execute({
+        accountId,
+        items: group.map((g) => ({
+          type: 'DEPOSIT' as const,
+          amount: g.amount,
+          description: g.description,
+        })),
+      });
+      for (const r of batch.results) {
+        if (r.type === 'DEPOSIT') {
+          outputs.push({
+            transactionId: r.transactionId,
+            accountId: r.accountId,
+            newBalance: r.newBalance,
+          } as any);
+        }
+      }
+    }
+    return Array.isArray(input) ? outputs : outputs[0];
   }
 }

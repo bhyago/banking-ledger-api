@@ -35,6 +35,24 @@ export class Transaction extends Entity<TransactionProps> {
     );
   }
 
+  static createRejected(
+    props: Omit<TransactionProps, 'createdAt' | 'status' | 'fee'> & {
+      fee?: number;
+    },
+    id?: UniqueEntityID,
+  ) {
+    const now = DateTime.utc().toJSDate();
+    return new Transaction(
+      {
+        ...props,
+        fee: props.fee ?? 0,
+        status: TransactionStatus.REJECTED,
+        createdAt: now,
+      },
+      id,
+    );
+  }
+
   get accountId(): UniqueEntityID {
     return this.props.accountId;
   }

@@ -26,6 +26,7 @@ export class PrismaTransactionMapper {
 
   static toPrisma(entity: Transaction): Prisma.TransactionUncheckedCreateInput {
     const data: any = {
+      id: entity.id.toValue(),
       accountId: entity.accountId.toValue(),
       type: entity.type,
       amountCents: BigInt(Math.round(entity.amount * 100)),
