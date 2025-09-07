@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { type UnitOfWork, type UnitOfWorkTx, UNIT_OF_WORK } from '@/common/uow';
 import { Inject } from '@nestjs/common';
-import type { AccountLockService } from '@/common/concurrency/account-lock.service';
-import type { AccountRepository } from '@/modules/account/repositories/account-repository';
-import type { LedgerRepository } from '../repositories/ledger-repository';
-import type { TransactionRepository } from '../repositories/transaction-repository';
-import type { FeePolicyRepository } from '../repositories/fee-policy-repository';
+import { AccountLockService } from '@/common/concurrency/account-lock.service';
+import { AccountRepository } from '@/modules/account/repositories/account-repository';
+import { LedgerRepository } from '../repositories/ledger-repository';
+import { TransactionRepository } from '../repositories/transaction-repository';
+import { FeePolicyRepository } from '../repositories/fee-policy-repository';
 import { Transaction } from '../entities/transaction';
 import { LedgerEntry } from '../entities/ledger-entry';
 import { TransactionType } from '../entities/enums';

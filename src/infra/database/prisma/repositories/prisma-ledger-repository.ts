@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma.service';
 import type { LedgerRepository } from '@/modules/transaction/repositories/ledger-repository';
 import type { LedgerEntry } from '@/modules/transaction/entities/ledger-entry';
 import { PrismaLedgerEntryMapper } from '../mappers/ledger-entry-mapper';

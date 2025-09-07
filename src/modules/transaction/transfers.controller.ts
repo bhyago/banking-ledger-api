@@ -9,7 +9,7 @@ import {
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { type transferDTO, transferSchemaValidation } from './dtos/transfer';
-import type { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
+import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
 import { QUEUES } from './async/messages';
 import { randomUUID } from 'crypto';
 

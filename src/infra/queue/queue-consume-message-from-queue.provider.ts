@@ -2,9 +2,9 @@ import type {
   ConsumeMessageFromQueueProvider,
   IStartQueueConsumerRequest,
 } from '@/contracts/rabbit-mq/consume-message-from-queue';
-import type { EnvService } from '@/infra/env/env.service';
+import { EnvService } from '@/infra/env/env.service';
 import { Injectable } from '@nestjs/common';
-import type { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { type Channel, type ConsumeMessage, connect } from 'amqplib';
 
 @Injectable()

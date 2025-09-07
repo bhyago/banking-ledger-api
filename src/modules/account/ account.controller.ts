@@ -7,14 +7,22 @@ import {
   HttpStatus,
   Body,
 } from '@nestjs/common';
-import type { CreateAccountUseCase } from './usecases/create-account';
-import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CreateAccountUseCase } from './usecases/create-account';
+import {
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiTags,
+  ApiOkResponse,
+  ApiParam,
+  ApiNotFoundResponse,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
 import { createAccountDTO } from './dtos/create-account';
 import {
-  type getAccountByIdDTO,
+  getAccountByIdDTO,
   getAccountByIdSchemaValidation,
 } from './dtos/get-account-by-id';
-import type { GetAccountByIdUseCase } from './usecases/get-account-by-id';
+import { GetAccountByIdUseCase } from './usecases/get-account-by-id';
 import { ZodValidationPipe } from 'nestjs-zod';
 
 @ApiTags('account')
@@ -47,6 +55,41 @@ export class AccountController {
   @ApiOperation({
     summary: 'Buscar conta por ID',
     description: 'Recupera os dados de uma conta existente pelo seu ID.',
+  })
+  @ApiParam({
+    name: 'accountId',
+    description: 'Identificador ULID da conta.',
+    required: true,
+    example: '01J9MZ3ZYK2J4TN2YCE2V7ZVB8',
+    schema: {
+      type: 'string',
+      format: 'ulid',
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$',
+    },
+  })
+  @ApiOkResponse({
+    description: 'Conta encontrada com sucesso',
+    type: getAccountByIdDTO.GetAccountByIdOutput,
+  })
+  @ApiNotFoundResponse({
+    description: 'Conta não encontrada',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'AccountNotFoundError' },
+        message: { type: 'string', example: 'Account not found' },
+      },
+    },
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Falha de validação (ex.: ULID inválido)',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'ZodValidationException' },
+        message: { type: 'string', example: 'Validation failed' },
+      },
+    },
   })
   async getAccountById(
     @Param(new ZodValidationPipe(getAccountByIdSchemaValidation.params))

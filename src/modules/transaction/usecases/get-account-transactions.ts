@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PrismaService } from '@/infra/database/prisma/prisma.service';
+import { PrismaService } from '@/infra/database/prisma/prisma.service';
 import type { getAccountTransactionsDTO } from '../dtos/get-account-transactions';
 
 @Injectable()

@@ -2,7 +2,7 @@ import type {
   ISendMessageToQueueRequest,
   SendMessageToQueueProvider,
 } from '@/contracts/rabbit-mq/send-message-to-queue';
-import type { EnvService } from '@/infra/env/env.service';
+import { EnvService } from '@/infra/env/env.service';
 import { Injectable } from '@nestjs/common';
 import { type Channel, connect } from 'amqplib';
 

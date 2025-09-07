@@ -1,6 +1,6 @@
-import { Injectable, type OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { QUEUES } from './messages';
-import type { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
+import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
 
 @Injectable()
 export class TransactionQueueBootstrap implements OnModuleInit {

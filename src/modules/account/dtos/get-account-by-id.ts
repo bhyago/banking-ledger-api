@@ -5,13 +5,21 @@ import { z } from 'zod';
 
 export const getAccountByIdSchemaValidation = {
   params: z.object({
-    accountId: z.string().ulid(),
+    accountId: z.string().ulid().describe('Identificador ULID da conta.'),
   }),
   response: z.object({
-    id: z.string().ulid(),
-    number: z.string(),
-    balance: z.number().min(0).positive(),
-    creditLimit: z.number().min(0).positive(),
+    id: z.string().ulid().describe('Identificador ULID da conta.'),
+    number: z.string().describe('Número da conta (exibição/identificação).'),
+    balance: z
+      .number()
+      .min(0)
+      .positive()
+      .describe('Saldo atual da conta em unidades monetárias.'),
+    creditLimit: z
+      .number()
+      .min(0)
+      .positive()
+      .describe('Limite de crédito disponível para a conta.'),
   }),
 } satisfies SchemaValidation;
 
@@ -21,7 +29,13 @@ type GetAccountByIdParams = z.infer<
 
 export namespace getAccountByIdDTO {
   export class GetAccountByIdParamsDTO implements GetAccountByIdParams {
-    @ApiProperty({ required: true })
+    @ApiProperty({
+      required: true,
+      description: 'Identificador ULID da conta.',
+      example: '01J9MZ3ZYK2J4TN2YCE2V7ZVB8',
+      format: 'ulid',
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$',
+    })
     accountId!: string;
   }
   export class GetAccountByIdInput extends createZodDto(

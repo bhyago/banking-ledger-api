@@ -13,14 +13,14 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { depositDTO, depositSchemaValidation } from './dtos/deposit';
 import { withdrawDTO, withdrawSchemaValidation } from './dtos/withdraw';
-import type { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
+import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
 import { randomUUID } from 'crypto';
 import { QUEUES } from './async/messages';
 import {
   type getAccountTransactionsDTO,
   getAccountTransactionsSchemaValidation,
 } from './dtos/get-account-transactions';
-import type { GetAccountTransactionsUseCase } from './usecases/get-account-transactions';
+import { GetAccountTransactionsUseCase } from './usecases/get-account-transactions';
 
 @ApiTags('transactions')
 @Controller('transactions/:accountId')

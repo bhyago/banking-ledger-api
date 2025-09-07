@@ -1,18 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { type UnitOfWork, type UnitOfWorkTx, UNIT_OF_WORK } from '@/common/uow';
-import type { AccountRepository } from '@/modules/account/repositories/account-repository';
-import type { TransactionRepository } from '../repositories/transaction-repository';
+import { AccountRepository } from '@/modules/account/repositories/account-repository';
+import { TransactionRepository } from '../repositories/transaction-repository';
 import { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { Transaction } from '../entities/transaction';
 import { TransactionType } from '../entities/enums';
 import { LedgerEntry } from '../entities/ledger-entry';
 import { accountErrors } from '@/modules/account/errors/account-errors';
-import type { LedgerRepository } from '../repositories/ledger-repository';
-import type { FeePolicyRepository } from '../repositories/fee-policy-repository';
+import { LedgerRepository } from '../repositories/ledger-repository';
+import { FeePolicyRepository } from '../repositories/fee-policy-repository';
 import { transactionErrors } from '../errors/transaction-errors';
-import type { TransferRepository } from '../repositories/transfer-repository';
+import { TransferRepository } from '../repositories/transfer-repository';
 import { Transfer } from '../entities/transfer';
-import type { AccountLockService } from '@/common/concurrency/account-lock.service';
+import { AccountLockService } from '@/common/concurrency/account-lock.service';
 function isUniqueError(e: any) {
   const msg = String(e?.message || '');
   return e?.code === 'P2002' || /unique|duplicate/i.test(msg);

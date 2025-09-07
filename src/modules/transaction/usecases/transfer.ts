@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { transferDTO } from '../dtos/transfer';
 import { OnEvent } from '@nestjs/event-emitter';
 import { QUEUES } from '../async/messages';
-import type { ProcessBatchTransfersUseCase } from './process-batch-transfers';
+import { ProcessBatchTransfersUseCase } from './process-batch-transfers';
 
 @Injectable()
 export class TransferUseCase {

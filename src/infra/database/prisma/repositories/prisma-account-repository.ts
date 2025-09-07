@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma.service';
 import type { AccountRepository } from '@/modules/account/repositories/account-repository';
 import type { Account } from '@/modules/account/entities/account';
 import { PrismaAccountMapper } from '../mappers/account-mapper';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma.service';
 import type { TransferRepository } from '@/modules/transaction/repositories/transfer-repository';
 import type { Transfer } from '@/modules/transaction/entities/transfer';
 import type { UnitOfWorkTx } from '@/common/uow';

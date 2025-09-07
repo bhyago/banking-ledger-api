@@ -24,7 +24,6 @@ export const KNOWN_ERRORS: KnownErrorInfo[] = [
     status: HttpStatus.BAD_REQUEST,
   },
   {
-    // Validation errors from nestjs-zod should be 422
     match: ZodValidationException as unknown as new (...args: any[]) => Error,
     status: HttpStatus.UNPROCESSABLE_ENTITY,
   },

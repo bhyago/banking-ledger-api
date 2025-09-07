@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma.service';
 import type { FeePolicyRepository } from '@/modules/transaction/repositories/fee-policy-repository';
 import type { FeePolicy } from '@/modules/transaction/entities/fee-policy';
 import type { TransactionType } from '@/modules/transaction/entities/enums';

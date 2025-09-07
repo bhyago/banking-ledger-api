@@ -15,7 +15,7 @@ import {
   throwError,
 } from 'rxjs';
 import {
-  type StructuredLoggerService,
+  StructuredLoggerService,
   sanitizeData,
   extractErrorChain,
 } from './structured-logger.service';
@@ -64,7 +64,6 @@ export class AppLoggingInterceptor implements NestInterceptor {
           return data;
         }),
         catchError((err) => {
-          // Preserve explicit HttpExceptions (e.g., 400/404) without rewriting to 500
           if (err instanceof HttpException) {
             const status =
               err.getStatus?.() ?? HttpStatus.INTERNAL_SERVER_ERROR;
@@ -149,7 +148,6 @@ export class AppLoggingInterceptor implements NestInterceptor {
       );
     }
 
-    // Non-HTTP contexts
     this.logger.info('Execution started', {
       requestId,
       className,
