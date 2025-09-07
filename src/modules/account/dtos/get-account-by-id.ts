@@ -5,10 +5,10 @@ import { z } from 'zod';
 
 export const getAccountByIdSchemaValidation = {
   params: z.object({
-    accountId: z.string(),
+    accountId: z.string().ulid(),
   }),
   response: z.object({
-    id: z.string(),
+    id: z.string().ulid(),
     number: z.string(),
     balance: z.number().min(0).positive(),
     creditLimit: z.number().min(0).positive(),
