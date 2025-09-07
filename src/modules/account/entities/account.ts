@@ -11,20 +11,21 @@ export interface AccountProps {
   deletedAt: Date | null;
 }
 
-function generateAccountNumberFromId(id: UniqueEntityID): number {
-  return parseInt(id.toString().slice(-6), 16);
+function generateAccountNumberFromId(id: UniqueEntityID): string {
+  const s = id.toString();
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  const num = (hash % 1_000_000_000).toString().padStart(10, '0');
+  return num;
 }
 
 export class Account extends Entity<AccountProps> {
   static create(
     props: Omit<
       AccountProps,
-      | 'createdAt'
-      | 'updatedAt'
-      | 'balance'
-      | 'creditLimit'
-      | 'number'
-      | 'deletedAt'
+      'createdAt' | 'updatedAt' | 'balance' | 'number' | 'deletedAt'
     >,
     id?: UniqueEntityID,
   ) {
@@ -32,9 +33,7 @@ export class Account extends Entity<AccountProps> {
     const account = new Account(
       {
         ...props,
-        number: generateAccountNumberFromId(
-          id ?? new UniqueEntityID(),
-        ).toString(),
+        number: generateAccountNumberFromId(id ?? new UniqueEntityID()),
         balance: 0,
         creditLimit: 0,
         createdAt: now,
