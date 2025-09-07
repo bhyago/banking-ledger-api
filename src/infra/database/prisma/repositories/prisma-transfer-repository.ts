@@ -17,4 +17,18 @@ export class PrismaTransferRepository implements TransferRepository {
     });
     return { id: row.id };
   }
+
+  async findByIdempotencyKey(
+    input: { idempotencyKey: string },
+    tx?: UnitOfWorkTx,
+  ): Promise<Transfer | null> {
+    const client = tx ? (tx as PrismaTxAdapter).client : this.prisma;
+    const row = await client.transfer.findUnique({
+      where: {
+        idempotencyKey: input.idempotencyKey,
+      },
+    });
+    if (!row) return null;
+    return PrismaTransferMapper.toDomain(row);
+  }
 }

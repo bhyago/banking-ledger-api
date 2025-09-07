@@ -33,7 +33,7 @@ model Transaction {
   ledger LedgerEntry[]
 
   @@index([accountId, createdAt(sort: Desc)], name: "idx_tx_account_created_at_desc")
-  @@index([type, idempotencyKey], name: "idx_tx_type_idemp")
+  @@unique([type, idempotencyKey], name: "uniq_tx_type_idemp")
   @@map("transaction")
 }
 

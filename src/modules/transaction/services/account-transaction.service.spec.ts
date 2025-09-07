@@ -15,6 +15,7 @@ import { accountErrors } from '@/modules/account/errors/account-errors';
 import { FeePolicy } from '../entities/fee-policy';
 import { transactionErrors } from '../errors/transaction-errors';
 import { Transfer } from '../entities/transfer';
+import { AccountLockService } from '@/common/concurrency/account-lock.service';
 
 const makeUow = () =>
   ({
@@ -33,6 +34,7 @@ const makeAccountRepository = () =>
 const makeTransactionRepository = () =>
   ({
     create: vi.fn(),
+    findByTypeAndIdempotencyKey: vi.fn(),
   }) as unknown as TransactionRepository;
 
 const makeLedgerRepository = () =>
@@ -48,6 +50,7 @@ const makeFeePolicyRepository = () =>
 const makeTransferRepository = () =>
   ({
     create: vi.fn(),
+    findByIdempotencyKey: vi.fn(),
   }) as unknown as TransferRepository;
 
 describe('AccountTransactionService.deposit', () => {
@@ -66,6 +69,7 @@ describe('AccountTransactionService.deposit', () => {
     ledgerRepository = makeLedgerRepository();
     feePolicyRepository = makeFeePolicyRepository();
     transferRepository = makeTransferRepository();
+    const lock = new AccountLockService();
     service = new AccountTransactionService(
       uow,
       accountRepository,
@@ -73,6 +77,7 @@ describe('AccountTransactionService.deposit', () => {
       ledgerRepository,
       feePolicyRepository,
       transferRepository,
+      lock,
     );
   });
 
@@ -148,11 +153,25 @@ describe('AccountTransactionService.deposit', () => {
     const account = Account.create({}, accountId);
     account.balance = 200;
 
-    (accountRepository.findById as any).mockResolvedValueOnce(account);
+    (accountRepository.findById as any).mockResolvedValue(account);
     // Simulate unique constraint (duplicate idempotency key)
     (transactionRepository.create as any).mockRejectedValueOnce({
       code: 'P2002',
     });
+    // Return existing transaction for the idempotency key
+    (
+      transactionRepository.findByTypeAndIdempotencyKey as any
+    ).mockResolvedValueOnce(
+      Transaction.create(
+        {
+          accountId,
+          type: TransactionType.DEPOSIT,
+          amount: 50,
+          idempotencyKey: 'dup-1',
+        },
+        new UniqueEntityID('tx-existing'),
+      ),
+    );
 
     const result = await service.deposit({
       accountId: 'acc-d-dup',
@@ -161,7 +180,7 @@ describe('AccountTransactionService.deposit', () => {
     } as any);
 
     expect(result).toEqual({
-      transactionId: 'idempotent',
+      transactionId: 'tx-existing',
       accountId: 'acc-d-dup',
       newBalance: 200,
     });
@@ -186,6 +205,7 @@ describe('AccountTransactionService.withdraw', () => {
     ledgerRepository = makeLedgerRepository();
     feePolicyRepository = makeFeePolicyRepository();
     transferRepository = makeTransferRepository();
+    const lock = new AccountLockService();
     service = new AccountTransactionService(
       uow,
       accountRepository,
@@ -193,6 +213,7 @@ describe('AccountTransactionService.withdraw', () => {
       ledgerRepository,
       feePolicyRepository,
       transferRepository,
+      lock,
     );
   });
 
@@ -303,11 +324,25 @@ describe('AccountTransactionService.withdraw', () => {
     account.balance = 300;
     account.creditLimit = 0;
 
-    (accountRepository.findById as any).mockResolvedValueOnce(account);
+    (accountRepository.findById as any).mockResolvedValue(account);
     (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(null);
     (transactionRepository.create as any).mockRejectedValueOnce({
       code: 'P2002',
     });
+    (
+      transactionRepository.findByTypeAndIdempotencyKey as any
+    ).mockResolvedValueOnce(
+      Transaction.create(
+        {
+          accountId,
+          type: TransactionType.WITHDRAW,
+          amount: 10,
+          fee: 0,
+          idempotencyKey: 'dup-2',
+        },
+        new UniqueEntityID('tx-w-existing'),
+      ),
+    );
 
     const result = await service.withdraw({
       accountId: 'acc-w-dup',
@@ -315,7 +350,7 @@ describe('AccountTransactionService.withdraw', () => {
       idempotencyKey: 'dup-2',
     } as any);
     expect(result).toEqual({
-      transactionId: 'idempotent',
+      transactionId: 'tx-w-existing',
       accountId: 'acc-w-dup',
       newBalance: 300,
       feeApplied: 0,
@@ -341,6 +376,7 @@ describe('AccountTransactionService.transfer', () => {
     ledgerRepository = makeLedgerRepository();
     feePolicyRepository = makeFeePolicyRepository();
     transferRepository = makeTransferRepository();
+    const lock = new AccountLockService();
     service = new AccountTransactionService(
       uow,
       accountRepository,
@@ -348,6 +384,7 @@ describe('AccountTransactionService.transfer', () => {
       ledgerRepository,
       feePolicyRepository,
       transferRepository,
+      lock,
     );
   });
 
@@ -574,6 +611,18 @@ describe('AccountTransactionService.transfer', () => {
     );
     (feePolicyRepository.findActiveByType as any).mockResolvedValueOnce(null);
     (transferRepository.create as any).mockRejectedValueOnce({ code: 'P2002' });
+    (transferRepository.findByIdempotencyKey as any).mockResolvedValueOnce(
+      Transfer.create(
+        {
+          fromAccountId: from.id,
+          toAccountId: to.id,
+          amount: 20,
+          feeFrom: 0,
+          idempotencyKey: 'dup-tr-1',
+        },
+        new UniqueEntityID('tr-existing'),
+      ),
+    );
 
     const res = await service.transfer({
       fromAccountId: 'acc-tdup-1',
@@ -582,7 +631,7 @@ describe('AccountTransactionService.transfer', () => {
       idempotencyKey: 'dup-tr-1',
     } as any);
     expect(res).toEqual({
-      transferId: 'idempotent',
+      transferId: 'tr-existing',
       fromAccountId: 'acc-tdup-1',
       toAccountId: 'acc-tdup-2',
       fromNewBalance: 100,

@@ -6,4 +6,9 @@ export abstract class TransactionRepository {
     input: Transaction,
     tx?: UnitOfWorkTx,
   ): Promise<{ id: string }>;
+
+  abstract findByTypeAndIdempotencyKey(
+    input: { type: any; idempotencyKey: string },
+    tx?: UnitOfWorkTx,
+  ): Promise<Transaction | null>;
 }

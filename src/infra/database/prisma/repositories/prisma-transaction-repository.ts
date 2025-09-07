@@ -17,4 +17,19 @@ export class PrismaTransactionRepository implements TransactionRepository {
     });
     return { id: row.id };
   }
+
+  async findByTypeAndIdempotencyKey(
+    input: { type: any; idempotencyKey: string },
+    tx?: UnitOfWorkTx,
+  ): Promise<Transaction | null> {
+    const client = tx ? (tx as PrismaTxAdapter).client : this.prisma;
+    const row = await client.transaction.findFirst({
+      where: {
+        type: input.type,
+        idempotencyKey: input.idempotencyKey,
+      },
+    });
+    if (!row) return null;
+    return PrismaTransactionMapper.toDomain(row);
+  }
 }

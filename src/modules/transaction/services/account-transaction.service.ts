@@ -58,11 +58,23 @@ export class AccountTransactionService {
         try {
           await this.transactionRepository.create(transactionEntity, tx);
         } catch (e) {
-          if (isUniqueError(e)) {
+          if (isUniqueError(e) && input.idempotencyKey) {
+            const existing =
+              await this.transactionRepository.findByTypeAndIdempotencyKey(
+                {
+                  type: TransactionType.DEPOSIT,
+                  idempotencyKey: input.idempotencyKey,
+                },
+                tx,
+              );
+            const fresh = await this.accountRepository.findById(
+              { accountId: input.accountId },
+              tx,
+            );
             return {
-              transactionId: 'idempotent',
-              accountId: account.id.toValue(),
-              newBalance: account.balance,
+              transactionId: existing?.id.toValue?.() ?? 'idempotent',
+              accountId: input.accountId,
+              newBalance: fresh ? fresh.balance : account.balance,
             };
           }
           throw e;
@@ -130,12 +142,24 @@ export class AccountTransactionService {
         try {
           await this.transactionRepository.create(txEntity, tx);
         } catch (e) {
-          if (isUniqueError(e)) {
+          if (isUniqueError(e) && input.idempotencyKey) {
+            const existing =
+              await this.transactionRepository.findByTypeAndIdempotencyKey(
+                {
+                  type: TransactionType.WITHDRAW,
+                  idempotencyKey: input.idempotencyKey,
+                },
+                tx,
+              );
+            const fresh = await this.accountRepository.findById(
+              { accountId: input.accountId },
+              tx,
+            );
             return {
-              transactionId: 'idempotent',
-              accountId: account.id.toValue(),
-              newBalance: account.balance,
-              feeApplied: 0,
+              transactionId: existing?.id.toValue?.() ?? 'idempotent',
+              accountId: input.accountId,
+              newBalance: fresh ? fresh.balance : account.balance,
+              feeApplied: existing ? existing.fee : 0,
             };
           }
           throw e;
@@ -212,14 +236,29 @@ export class AccountTransactionService {
           try {
             await this.transferRepository.create(transfer, tx);
           } catch (e) {
-            if (isUniqueError(e)) {
+            if (isUniqueError(e) && input.idempotencyKey) {
+              const existing =
+                await this.transferRepository.findByIdempotencyKey(
+                  { idempotencyKey: input.idempotencyKey },
+                  tx,
+                );
+              const [freshFrom, freshTo] = await Promise.all([
+                this.accountRepository.findById(
+                  { accountId: input.fromAccountId },
+                  tx,
+                ),
+                this.accountRepository.findById(
+                  { accountId: input.toAccountId },
+                  tx,
+                ),
+              ]);
               return {
-                transferId: 'idempotent',
-                fromAccountId: from.id.toValue(),
-                toAccountId: to.id.toValue(),
-                fromNewBalance: from.balance,
-                toNewBalance: to.balance,
-                feeApplied: 0,
+                transferId: existing?.id.toValue?.() ?? 'idempotent',
+                fromAccountId: input.fromAccountId,
+                toAccountId: input.toAccountId,
+                fromNewBalance: freshFrom ? freshFrom.balance : from.balance,
+                toNewBalance: freshTo ? freshTo.balance : to.balance,
+                feeApplied: existing ? existing.feeFrom : 0,
               };
             }
             throw e;
