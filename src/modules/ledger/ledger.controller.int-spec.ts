@@ -79,7 +79,6 @@ describe('LedgerController (Integration + DB)', () => {
     expect(res.body.ledger[0]).toEqual(
       expect.objectContaining({ type: 'credit', amount: 10, currency: 'BRL' }),
     );
-    // Second is the withdraw (debit total including fee)
     expect(res.body.ledger[1]).toEqual(
       expect.objectContaining({ type: 'debit', currency: 'BRL' }),
     );

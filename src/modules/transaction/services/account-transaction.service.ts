@@ -239,6 +239,24 @@ export class AccountTransactionService {
           const fee = policy ? policy.calculate(amount) : 0;
           const total = amount + fee;
           const available = from.balance + from.creditLimit;
+          // Regra adicional: quando não há saldo positivo, uma única transferência
+          // não pode exceder o limite de crédito disponível.
+          if (from.balance <= 0 && total > from.creditLimit) {
+            try {
+              const rejected = Transaction.createRejected({
+                accountId: from.id,
+                type: TransactionType.TRANSFER,
+                amount,
+                fee,
+                description: input.description,
+                idempotencyKey: input.idempotencyKey,
+              });
+              await this.transactionRepository.create(rejected, tx);
+            } catch (e) {
+              if (!isUniqueError(e)) throw e;
+            }
+            throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
+          }
           if (available < total) {
             try {
               const rejected = Transaction.createRejected({

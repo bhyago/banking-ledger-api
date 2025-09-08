@@ -13,6 +13,7 @@ import {
   ApiParam,
   ApiNotFoundResponse,
   ApiUnprocessableEntityResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ErrorResponseDTO } from '@/infra/http/dtos/error-response';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -46,6 +47,25 @@ export class LedgerController {
       format: 'ulid',
       pattern: '^[0-9A-HJKMNP-TV-Z]{26}$',
     },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Página (>= 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'perPage',
+    required: false,
+    description: 'Itens por página (1-100)',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'order',
+    required: false,
+    description: 'Ordenação por data',
+    example: 'asc',
+    enum: ['asc', 'desc'],
   })
   @ApiResponse({
     status: HttpStatus.OK,

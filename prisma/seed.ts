@@ -4,7 +4,6 @@ import { ulid } from 'ulid';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Basic seed: a few accounts with initial balances/limits
   const now = new Date();
   const accounts = [
     {
@@ -52,7 +51,6 @@ async function main() {
     });
   }
 
-  // Seed Fee Policies (valid for a long window)
   const startsAt = new Date(now.getFullYear() - 10, 0, 1);
   const endsAt = new Date(now.getFullYear() + 10, 11, 31);
 

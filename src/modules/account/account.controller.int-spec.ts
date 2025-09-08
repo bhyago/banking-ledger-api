@@ -45,7 +45,7 @@ describe('AccountController (Integration + DB)', () => {
     const accountId = create.body.accountId as string;
 
     const res = await request(app.getHttpServer())
-      .post(`/account/${accountId}`)
+      .patch(`/account/${accountId}`)
       .send({
         fullName: 'João da Silva',
         cpf: '98765432100',

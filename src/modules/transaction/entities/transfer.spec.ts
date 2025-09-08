@@ -2,15 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { Transfer } from './transfer';
 import { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { TransferStatus } from './enums';
+import { randomUUID } from 'crypto';
 
 describe('Transfer Entity', () => {
   it('should create with defaults (status APPLIED, feeFrom 0) and getters', () => {
+    const uuid = randomUUID();
     const from = new UniqueEntityID('from-1');
     const to = new UniqueEntityID('to-1');
     const tr = Transfer.create({
       fromAccountId: from,
       toAccountId: to,
       amount: 75,
+      idempotencyKey: uuid,
     });
 
     expect(tr.fromAccountId.toValue()).toBe('from-1');
@@ -22,10 +25,12 @@ describe('Transfer Entity', () => {
   });
 
   it('should accept feeFrom override', () => {
+    const uuid = randomUUID();
     const tr = Transfer.create({
       fromAccountId: new UniqueEntityID('from-2'),
       toAccountId: new UniqueEntityID('to-2'),
       amount: 100,
+      idempotencyKey: uuid,
       feeFrom: 2.25,
     });
 

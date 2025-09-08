@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiResponse,
   ApiTags,
   ApiOperation,
   ApiParam,
@@ -20,7 +19,6 @@ import {
   ApiUnprocessableEntityResponse,
   ApiOkResponse,
   ApiAcceptedResponse,
-  ApiBadRequestResponse,
   ApiQuery,
 } from '@nestjs/swagger';
 import { ErrorResponseDTO } from '@/infra/http/dtos/error-response';

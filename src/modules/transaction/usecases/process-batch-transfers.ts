@@ -31,6 +31,11 @@ export class ProcessBatchTransfersUseCase {
     private readonly ledgerRepository: LedgerRepository,
   ) {}
 
+  private isUniqueError(e: any) {
+    const msg = String(e?.message || '');
+    return e?.code === 'P2002' || /unique|duplicate/i.test(msg);
+  }
+
   async execute(input: {
     fromAccountId: string;
     toAccountId: string;
@@ -67,20 +72,44 @@ export class ProcessBatchTransfersUseCase {
           ]);
           if (!from || !to) throw new accountErrors.AccountNotFoundError();
 
-          // Resolve policy once per batch
           const transferPolicy =
             await this.feePolicyRepository.findActiveByType(
               { transactionType: TransactionType.TRANSFER, at: new Date() },
               tx,
             );
 
+          // Pre-check: skip items that are already applied (idempotent)
+          const existingMap = new Map<string, Transfer | null>();
+          for (const it of input.items) {
+            const existing = await this.transferRepository.findByIdempotencyKey(
+              { idempotencyKey: it.idempotencyKey },
+              tx,
+            );
+            existingMap.set(it.idempotencyKey, existing);
+          }
+
           let fromBalance = from.balance;
           let toBalance = to.balance;
           for (const it of input.items) {
+            // If already exists, do not count it again for availability
+            if (existingMap.get(it.idempotencyKey)) continue;
             const fee = transferPolicy
               ? transferPolicy.calculate(it.amount)
               : 0;
             const total = it.amount + fee;
+            // Regra: sem saldo positivo, uma única transferência não pode exceder o limite de crédito
+            if (fromBalance <= 0 && total > from.creditLimit) {
+              const rejected = Transaction.createRejected({
+                accountId: from.id,
+                type: TransactionType.TRANSFER,
+                amount: it.amount,
+                fee,
+                description: it.description,
+                idempotencyKey: it.idempotencyKey,
+              });
+              await this.transactionRepository.create(rejected, tx);
+              throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
+            }
             const available = fromBalance + from.creditLimit;
             if (available < total) {
               const rejected = Transaction.createRejected({
@@ -114,6 +143,20 @@ export class ProcessBatchTransfersUseCase {
               : 0;
             const total = it.amount + fee;
 
+            const already = existingMap.get(it.idempotencyKey);
+            if (already) {
+              // Idempotent: skip side effects; report existing
+              results.push({
+                transferId: already.id.toValue(),
+                fromAccountId: from.id.toValue(),
+                toAccountId: to.id.toValue(),
+                fromNewBalance: fromBalance,
+                toNewBalance: toBalance,
+                feeApplied: already.feeFrom,
+              });
+              continue;
+            }
+
             const transfer = Transfer.create({
               fromAccountId: from.id,
               toAccountId: to.id,
@@ -121,7 +164,41 @@ export class ProcessBatchTransfersUseCase {
               feeFrom: fee,
               idempotencyKey: it.idempotencyKey,
             });
-            await this.transferRepository.create(transfer, tx);
+            try {
+              await this.transferRepository.create(transfer, tx);
+            } catch (e) {
+              if (this.isUniqueError(e)) {
+                const existing =
+                  await this.transferRepository.findByIdempotencyKey(
+                    { idempotencyKey: it.idempotencyKey },
+                    tx,
+                  );
+                if (existing) {
+                  // Do not adjust balances; reflect current
+                  const [freshFrom, freshTo] = await Promise.all([
+                    this.accountRepository.findById(
+                      { accountId: from.id.toValue() },
+                      tx,
+                    ),
+                    this.accountRepository.findById(
+                      { accountId: to.id.toValue() },
+                      tx,
+                    ),
+                  ]);
+                  results.push({
+                    transferId: existing.id.toValue(),
+                    fromAccountId: from.id.toValue(),
+                    toAccountId: to.id.toValue(),
+                    fromNewBalance: freshFrom ? freshFrom.balance : fromBalance,
+                    toNewBalance: freshTo ? freshTo.balance : toBalance,
+                    feeApplied: existing.feeFrom,
+                  });
+                  continue;
+                }
+                throw e;
+              }
+              throw e;
+            }
 
             const txFrom = Transaction.create({
               accountId: from.id,

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { depositDTO } from '../dtos/deposit';
-import { AccountTransactionService } from '../services/account-transaction.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { QUEUES } from '../async/messages';
 import { ProcessBatchAccountTransactionsUseCase } from './process-batch-account-transactions';
+import { AccountTransactionService } from '../services/account-transaction.service';
 
 @Injectable()
 export class DepositUseCase {
@@ -29,7 +29,7 @@ export class DepositUseCase {
       const batch = await this.batchUseCase.execute({
         accountId,
         items: group.map((g) => ({
-          type: 'DEPOSIT' as const,
+          type: 'DEPOSIT',
           amount: g.amount,
           description: g.description,
         })),

@@ -72,7 +72,6 @@ describe('Transactions HTTP (E2E)', () => {
       .send({ amount: 50, description: 'cash' });
 
     expect(res.statusCode).toBe(202);
-    // id gerado será uuid; apenas checamos queue
     expect(fakeQueue.published.at(-1)).toEqual(
       expect.objectContaining({
         queueName: QUEUES.withdraw,
@@ -86,14 +85,11 @@ describe('Transactions HTTP (E2E)', () => {
   });
 
   test('Bootstrap registra consumidores das filas esperadas', async () => {
-    // TransactionQueueBootstrap roda no onModuleInit; fakeConsumer captura
     const names = new Set(fakeConsumer.started.map((s) => s.queueName));
     expect(names.has(QUEUES.deposit)).toBeTruthy();
     expect(names.has(QUEUES.withdraw)).toBeTruthy();
     expect(names.has(QUEUES.transfer)).toBeTruthy();
   });
-
-  // Cenário sem Idempotency-Key removido; guard exige header
 
   test('Deposit validações de schema (amount inválido e descrição longa)', async () => {
     const res1 = await request(app.getHttpServer())

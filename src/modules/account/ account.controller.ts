@@ -6,6 +6,7 @@ import {
   Param,
   HttpStatus,
   Body,
+  Patch,
 } from '@nestjs/common';
 import { CreateAccountUseCase } from './usecases/create-account';
 import {
@@ -61,7 +62,7 @@ export class AccountController {
     return this.createAccountUseCase.execute(body);
   }
 
-  @Post(':accountId')
+  @Patch(':accountId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Atualizar dados da conta (fullName/cpf/creditLimit)',

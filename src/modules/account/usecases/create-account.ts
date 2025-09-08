@@ -23,8 +23,8 @@ export class CreateAccountUseCase {
     }
     const account = Account.create({
       creditLimit: input?.creditLimit ?? 0,
-      fullName: input?.fullName ?? null,
-      cpf: input?.cpf ?? null,
+      fullName: input?.fullName,
+      cpf: input?.cpf,
     });
 
     const savedAccount = await this.accountRepository.save(account);

@@ -78,6 +78,4 @@ describe('Transfer HTTP (E2E)', () => {
 
     expect([400, 422]).toContain(res.statusCode);
   });
-
-  // Cenário sem Idempotency-Key removido; guard exige header
 });

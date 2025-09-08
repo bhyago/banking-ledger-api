@@ -1,5 +1,5 @@
 import { FeePolicy } from '@/modules/transaction/entities/fee-policy';
-import { Prisma, type FeePolicy as PrismaFee } from '@prisma/client';
+import { type FeePolicy as PrismaFee } from '@prisma/client';
 import { UniqueEntityID } from '@/common/entities/unique-entity-id';
 
 export class PrismaFeePolicyMapper {

@@ -10,6 +10,7 @@ import { Account } from '@/modules/account/entities/account';
 import { UniqueEntityID } from '@/common/entities/unique-entity-id';
 import { AccountLockService } from '@/common/concurrency/account-lock.service';
 import { transactionErrors } from '../errors/transaction-errors';
+import { ulid } from 'ulid';
 
 const makeUow = () =>
   ({
@@ -71,31 +72,44 @@ describe('AccountTransactionService concurrency (transfer)', () => {
   });
 
   it('serializes transfers from the same account to avoid overdraft', async () => {
-    const from = Account.create({}, new UniqueEntityID('acc-from'));
-    const to1 = Account.create({}, new UniqueEntityID('acc-to1'));
-    const to2 = Account.create({}, new UniqueEntityID('acc-to2'));
+    const fromId = ulid();
+    const to1Id = ulid();
+    const to2Id = ulid();
+
+    const from = Account.create(
+      { cpf: '11122233344', fullName: 'From Acc', creditLimit: 0 },
+      new UniqueEntityID(fromId),
+    );
+    const to1 = Account.create(
+      { cpf: '22233344455', fullName: 'To Acc 1', creditLimit: 0 },
+      new UniqueEntityID(to1Id),
+    );
+    const to2 = Account.create(
+      { cpf: '33344455566', fullName: 'To Acc 2', creditLimit: 0 },
+      new UniqueEntityID(to2Id),
+    );
     from.balance = 100;
     to1.balance = 0;
     to2.balance = 0;
 
     (accountRepository.findById as any).mockImplementation(
       async ({ accountId }: any) => {
-        if (accountId === 'acc-from') return from;
-        if (accountId === 'acc-to1') return to1;
-        if (accountId === 'acc-to2') return to2;
+        if (accountId === fromId) return from;
+        if (accountId === to1Id) return to1;
+        if (accountId === to2Id) return to2;
         return null;
       },
     );
 
     const t1 = service.transfer({
-      fromAccountId: 'acc-from',
-      toAccountId: 'acc-to1',
+      fromAccountId: fromId,
+      toAccountId: to1Id,
       amount: 70,
       idempotencyKey: 'k1',
     } as any);
     const t2 = service.transfer({
-      fromAccountId: 'acc-from',
-      toAccountId: 'acc-to2',
+      fromAccountId: fromId,
+      toAccountId: to2Id,
       amount: 70,
       idempotencyKey: 'k2',
     } as any);
