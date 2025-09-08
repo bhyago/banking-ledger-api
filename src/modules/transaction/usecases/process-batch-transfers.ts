@@ -91,13 +91,11 @@ export class ProcessBatchTransfersUseCase {
           let fromBalance = from.balance;
           let toBalance = to.balance;
           for (const it of input.items) {
-            // If already exists, do not count it again for availability
             if (existingMap.get(it.idempotencyKey)) continue;
             const fee = transferPolicy
               ? transferPolicy.calculate(it.amount)
               : 0;
             const total = it.amount + fee;
-            // Regra: sem saldo positivo, uma única transferência não pode exceder o limite de crédito
             if (fromBalance <= 0 && total > from.creditLimit) {
               const rejected = Transaction.createRejected({
                 accountId: from.id,
@@ -145,7 +143,6 @@ export class ProcessBatchTransfersUseCase {
 
             const already = existingMap.get(it.idempotencyKey);
             if (already) {
-              // Idempotent: skip side effects; report existing
               results.push({
                 transferId: already.id.toValue(),
                 fromAccountId: from.id.toValue(),
@@ -174,7 +171,6 @@ export class ProcessBatchTransfersUseCase {
                     tx,
                   );
                 if (existing) {
-                  // Do not adjust balances; reflect current
                   const [freshFrom, freshTo] = await Promise.all([
                     this.accountRepository.findById(
                       { accountId: from.id.toValue() },

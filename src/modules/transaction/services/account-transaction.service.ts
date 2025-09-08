@@ -45,7 +45,6 @@ export class AccountTransactionService {
         );
         if (!account) throw new accountErrors.AccountNotFoundError();
 
-        // Idempotency pre-check to avoid unique error logs
         if (input.idempotencyKey) {
           const existing =
             await this.transactionRepository.findByTypeAndIdempotencyKey(
@@ -159,13 +158,11 @@ export class AccountTransactionService {
             });
             await this.transactionRepository.create(rejected, tx);
           } catch (e) {
-            // swallow unique errors for idempotent duplicates
             if (!isUniqueError(e)) throw e;
           }
           throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
         }
 
-        // Idempotency pre-check to avoid unique error logs
         if (input.idempotencyKey) {
           const existing =
             await this.transactionRepository.findByTypeAndIdempotencyKey(
@@ -203,7 +200,6 @@ export class AccountTransactionService {
           await this.transactionRepository.create(txEntity, tx);
         } catch (e) {
           if (isUniqueError(e) && input.idempotencyKey) {
-            // Query outside the aborted transaction
             const existing =
               await this.transactionRepository.findByTypeAndIdempotencyKey({
                 type: TransactionType.WITHDRAW,
@@ -280,8 +276,6 @@ export class AccountTransactionService {
           const fee = policy ? policy.calculate(amount) : 0;
           const total = amount + fee;
           const available = from.balance + from.creditLimit;
-          // Regra adicional: quando não há saldo positivo, uma única transferência
-          // não pode exceder o limite de crédito disponível.
           if (from.balance <= 0 && total > from.creditLimit) {
             try {
               const rejected = Transaction.createRejected({
@@ -315,7 +309,6 @@ export class AccountTransactionService {
             throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
           }
 
-          // Idempotency pre-check for transfer to avoid unique error logs
           if (input.idempotencyKey) {
             const existing = await this.transferRepository.findByIdempotencyKey(
               { idempotencyKey: input.idempotencyKey },

@@ -20,7 +20,8 @@ export class QueueConsumeMessageFromQueueProvider
     for await (const queue of input) {
       try {
         const connection = await connect(
-          this.envService.get('QUEUE_SERVER_URL') || 'amqp://localhost:5672',
+          this.envService.get('QUEUE_SERVER_URL') ||
+            'amqp://rabbitmq:rabbitmq@localhost:5672',
           {
             clientProperties: { connection_name: 'BankingAPI' },
           },

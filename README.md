@@ -131,7 +131,7 @@ IMPORTANTE
 - Serviços: Postgres em `localhost:5432` (DB: `banking-ledger`), RabbitMQ em `localhost:5672` (UI: `http://localhost:15672`, usuário/senha: `rabbitmq`/`rabbitmq`).
 - `.env` sugerido (host):
   - `DATABASE_URL=postgresql://postgres:docker@localhost:5432/banking-ledger?schema=public`
-  - `QUEUE_SERVER_URL=amqp://localhost:5672`
+  - `QUEUE_SERVER_URL=amqp://rabbitmq:rabbitmq@localhost:5672`
 - `.env.test` (E2E com DB): use `localhost` também; o DB `banking-ledger-test` precisa existir. Você pode criá-lo conectando no Postgres e executando `CREATE DATABASE "banking-ledger-test";` ou ajustar a URL para reutilizar `banking-ledger` durante o desenvolvimento.
 
 Scripts úteis (pnpm)
