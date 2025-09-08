@@ -116,6 +116,10 @@ Nota sobre workers e eventos
 - Popular base com seeds (contas com CPF/nome e políticas de tarifa):
   - `pnpm prisma:seed`
 
+IMPORTANTE
+
+- Execute `pnpm prisma:seed` antes de subir a API pela primeira vez (e sempre que recriar o banco). Sem os seeds, algumas rotas podem retornar vazio ou falhar por ausência de dados iniciais (ex.: políticas de tarifa e contas de exemplo).
+
 4. Rodar a API
 
 - Dev: `pnpm start:dev`
@@ -143,12 +147,6 @@ Scripts úteis (pnpm)
 - Unitários e integração (sem DB): `pnpm test`
 - E2E com DB real: `pnpm test:e2e`
   - Pré-requisitos: banco rodando, migrações aplicadas e seeds.
-- Estratégias cobertas:
-  - Idempotência HTTP (com `Idempotency-Key`) para depósito/saque/transferência.
-  - Concorrência de transferências serializadas por conta.
-  - Batch de transações com verificação de ledger e saldos.
-  - LedgerController: paginação, ordenação e 404 para conta inexistente.
-  - AccountController: criação/atualização de conta com CPF válido e unicidade entre contas ativas.
 
 <a id="decisoes-de-projeto"></a>
 
