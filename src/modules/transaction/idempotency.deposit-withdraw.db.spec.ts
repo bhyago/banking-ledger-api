@@ -5,7 +5,7 @@ import { AppModule } from '@/infra/app.module';
 import { PrismaService } from '@/infra/database/prisma/prisma.service';
 import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
 import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
-import { FakeConsumeQueue, FakeSendQueue } from '../../fakes/fake-queue';
+import { FakeConsumeQueue, FakeSendQueue } from 'test/fakes/fake-queue';
 import { AccountTransactionService } from '@/modules/transaction/services/account-transaction.service';
 import { randomUUID } from 'crypto';
 

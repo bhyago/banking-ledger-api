@@ -1,3 +1,4 @@
+// moved from test/unit/transaction-batch.spec.ts
 import { Test } from '@nestjs/testing';
 import { DepositUseCase } from '@/modules/transaction/usecases/deposit';
 import { WithdrawUseCase } from '@/modules/transaction/usecases/withdraw';

@@ -13,3 +13,5 @@ process.env.RABBITMQ_WITHDRAW_QUEUE =
   process.env.RABBITMQ_WITHDRAW_QUEUE ?? 'tx-withdrawals';
 process.env.RABBITMQ_TRANSFER_QUEUE =
   process.env.RABBITMQ_TRANSFER_QUEUE ?? 'tx-transfers';
+// Force queue fakes in tests
+process.env.QUEUE_FAKE = process.env.QUEUE_FAKE ?? 'true';

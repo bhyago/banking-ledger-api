@@ -133,7 +133,6 @@ Nota sobre workers e eventos
 Scripts úteis (pnpm)
 
 - `pnpm db:up` / `pnpm db:down` – sobe/derruba Postgres e RabbitMQ.
-- `pnpm db:create:test` – cria o DB `banking-ledger-test` no container do Postgres.
 - `pnpm db:migrate` – `prisma generate` + `prisma migrate dev`.
 - `pnpm db:seed` – executa o seed do Prisma.
 
@@ -142,7 +141,7 @@ Scripts úteis (pnpm)
 ### Testes
 
 - Unitários e integração (sem DB): `pnpm test`
-- E2E com DB real: `pnpm test:e2e:db`
+- E2E com DB real: `pnpm test:e2e`
   - Pré-requisitos: banco rodando, migrações aplicadas e seeds.
 - Estratégias cobertas:
   - Idempotência HTTP (com `Idempotency-Key`) para depósito/saque/transferência.

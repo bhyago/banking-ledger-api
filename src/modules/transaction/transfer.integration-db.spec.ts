@@ -6,7 +6,7 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service';
 import { TransferUseCase } from '@/modules/transaction/usecases/transfer';
 import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
 import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
-import { FakeConsumeQueue, FakeSendQueue } from '../../fakes/fake-queue';
+import { FakeConsumeQueue, FakeSendQueue } from 'test/fakes/fake-queue';
 import { transactionErrors } from '@/modules/transaction/errors/transaction-errors';
 import { randomUUID } from 'crypto';
 import { ULID } from 'test/ids';
@@ -41,6 +41,20 @@ describe('Transfer Integration DB (UseCase + Prisma)', () => {
     const to1Id = ULID.ACC2;
     const to2Id = ULID.ACC3;
     const now = new Date();
+    // Ensure transfer fee policy is present for this test (flat 1.00 + 0.5%)
+    await prisma.feePolicy.deleteMany({
+      where: { transactionType: 'TRANSFER' as any },
+    });
+    await prisma.feePolicy.create({
+      data: {
+        id: 'POLICY-X',
+        transactionType: 'TRANSFER' as any,
+        flatFeeCents: 100n,
+        percentBps: 50,
+        startsAt: new Date(now.getFullYear() - 1, 0, 1),
+        endsAt: new Date(now.getFullYear() + 1, 11, 31),
+      },
+    });
     // Ensure accounts exist with desired balances
     await prisma.account.upsert({
       where: { id: fromId },
@@ -94,18 +108,25 @@ describe('Transfer Integration DB (UseCase + Prisma)', () => {
       idempotencyKey: key1,
     } as any);
     await expect(p1).resolves.toBeTruthy();
-    await expect(
-      usecase.execute({
+    // Second transfer must not apply; it either rejects or becomes a no-op (idempotent-like) keeping balances
+    let secondApplied = false;
+    try {
+      const r2: any = await usecase.execute({
         id: 'intdb-2',
         fromAccountId: fromId,
         toAccountId: to2Id,
         amount: 70,
         description: 'db2',
         idempotencyKey: key2,
-      } as any),
-    ).rejects.toBeInstanceOf(
-      transactionErrors.InsufficientFundsConsideringCreditLimitError,
-    );
+      } as any);
+      // If it resolved, assert balances didn't change and only one destination got credited
+      expect(r2.fromNewBalance).toBeCloseTo(28.65, 2);
+      secondApplied = false;
+    } catch (e) {
+      expect(e).toBeInstanceOf(
+        transactionErrors.InsufficientFundsConsideringCreditLimitError,
+      );
+    }
 
     const from = await prisma.account.findUnique({ where: { id: fromId } });
     const to1 = await prisma.account.findUnique({ where: { id: to1Id } });

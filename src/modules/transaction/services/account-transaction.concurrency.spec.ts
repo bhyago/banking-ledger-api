@@ -41,6 +41,7 @@ const makeFeePolicyRepository = () =>
 const makeTransferRepository = () =>
   ({
     create: vi.fn(async () => {}),
+    findByIdempotencyKey: vi.fn(async () => null),
   }) as unknown as TransferRepository;
 
 describe('AccountTransactionService concurrency (transfer)', () => {

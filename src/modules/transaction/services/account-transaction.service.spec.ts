@@ -507,7 +507,6 @@ describe('AccountTransactionService.transfer', () => {
     expect(txTo.relatedAccountId?.toValue()).toBe(fromIdStr);
     expect(txTo.transferId?.toValue()).toBe(createdTransfer.id.toValue());
 
-    // two ledger entries
     const entries = (ledgerRepository.append as any).mock.calls.map(
       (c: any[]) => c[0],
     ) as LedgerEntry[];
@@ -523,7 +522,6 @@ describe('AccountTransactionService.transfer', () => {
     expect(entryTo.transferId?.toValue()).toBe(createdTransfer.id.toValue());
     expect(entryTo.balanceAfter).toBe(300);
 
-    // accounts updated
     const updates = (accountRepository.update as any).mock.calls.map(
       (c: any[]) => c[0],
     ) as Account[];
@@ -532,7 +530,6 @@ describe('AccountTransactionService.transfer', () => {
     expect(updatedFrom.balance).toBe(397);
     expect(updatedTo.balance).toBe(300);
 
-    // result mapping
     expect(result.transferId).toBe(createdTransfer.id.toValue());
     expect(result.fromAccountId).toBe(fromIdStr);
     expect(result.toAccountId).toBe(toIdStr);

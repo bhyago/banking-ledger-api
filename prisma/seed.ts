@@ -1,4 +1,5 @@
 import { PrismaClient, TransactionType } from '@prisma/client';
+const ULID_ACC1 = '01J9MZ3ZYK2J4TN2YCE2V7ZVB8';
 import { ulid } from 'ulid';
 
 const prisma = new PrismaClient();
@@ -50,6 +51,29 @@ async function main() {
       },
     });
   }
+
+  // Ensure known ULIDs used in tests exist with expected balances
+  await prisma.account.upsert({
+    where: { id: ULID_ACC1 },
+    update: {
+      number: ULID_ACC1.slice(-6),
+      balanceCents: 100_00n,
+      creditLimitCents: 0n,
+      fullName: 'Seed ACC1',
+      cpf: '00011122233',
+      updatedAt: now,
+    },
+    create: {
+      id: ULID_ACC1,
+      number: ULID_ACC1.slice(-6),
+      fullName: 'Seed ACC1',
+      cpf: '00011122233',
+      balanceCents: 100_00n,
+      creditLimitCents: 0n,
+      createdAt: now,
+      updatedAt: now,
+    },
+  });
 
   const startsAt = new Date(now.getFullYear() - 10, 0, 1);
   const endsAt = new Date(now.getFullYear() + 10, 11, 31);

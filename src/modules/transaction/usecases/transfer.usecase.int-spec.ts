@@ -90,9 +90,18 @@ describe('Transfer integration (service + use case + locks)', () => {
   beforeEach(async () => {
     accounts = new InMemoryAccountRepository();
     // seed
-    const from = Account.create({}, new UniqueEntityID('acc-i-from'));
-    const to1 = Account.create({}, new UniqueEntityID('acc-i-to1'));
-    const to2 = Account.create({}, new UniqueEntityID('acc-i-to2'));
+    const from = Account.create(
+      { cpf: '00011122233', fullName: 'From I', creditLimit: 0 },
+      new UniqueEntityID('acc-i-from'),
+    );
+    const to1 = Account.create(
+      { cpf: '11122233344', fullName: 'To I 1', creditLimit: 0 },
+      new UniqueEntityID('acc-i-to1'),
+    );
+    const to2 = Account.create(
+      { cpf: '22233344455', fullName: 'To I 2', creditLimit: 0 },
+      new UniqueEntityID('acc-i-to2'),
+    );
     from.balance = 100;
     to1.balance = 0;
     to2.balance = 0;

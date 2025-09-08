@@ -45,6 +45,29 @@ export class AccountTransactionService {
         );
         if (!account) throw new accountErrors.AccountNotFoundError();
 
+        // Idempotency pre-check to avoid unique error logs
+        if (input.idempotencyKey) {
+          const existing =
+            await this.transactionRepository.findByTypeAndIdempotencyKey(
+              {
+                type: TransactionType.DEPOSIT,
+                idempotencyKey: input.idempotencyKey,
+              },
+              tx,
+            );
+          if (existing) {
+            const fresh = await this.accountRepository.findById(
+              { accountId: input.accountId },
+              tx,
+            );
+            return {
+              transactionId: existing.id.toValue(),
+              accountId: input.accountId,
+              newBalance: fresh ? fresh.balance : account.balance,
+            };
+          }
+        }
+
         const transactionEntity = Transaction.create({
           accountId: new UniqueEntityID(account.id.toValue()),
           type: TransactionType.DEPOSIT,
@@ -59,18 +82,15 @@ export class AccountTransactionService {
           await this.transactionRepository.create(transactionEntity, tx);
         } catch (e) {
           if (isUniqueError(e) && input.idempotencyKey) {
+            // Query outside the aborted transaction
             const existing =
-              await this.transactionRepository.findByTypeAndIdempotencyKey(
-                {
-                  type: TransactionType.DEPOSIT,
-                  idempotencyKey: input.idempotencyKey,
-                },
-                tx,
-              );
-            const fresh = await this.accountRepository.findById(
-              { accountId: input.accountId },
-              tx,
-            );
+              await this.transactionRepository.findByTypeAndIdempotencyKey({
+                type: TransactionType.DEPOSIT,
+                idempotencyKey: input.idempotencyKey,
+              });
+            const fresh = await this.accountRepository.findById({
+              accountId: input.accountId,
+            });
             return {
               transactionId: existing?.id.toValue?.() ?? 'idempotent',
               accountId: input.accountId,
@@ -145,6 +165,30 @@ export class AccountTransactionService {
           throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
         }
 
+        // Idempotency pre-check to avoid unique error logs
+        if (input.idempotencyKey) {
+          const existing =
+            await this.transactionRepository.findByTypeAndIdempotencyKey(
+              {
+                type: TransactionType.WITHDRAW,
+                idempotencyKey: input.idempotencyKey,
+              },
+              tx,
+            );
+          if (existing) {
+            const fresh = await this.accountRepository.findById(
+              { accountId: input.accountId },
+              tx,
+            );
+            return {
+              transactionId: existing.id.toValue(),
+              accountId: input.accountId,
+              newBalance: fresh ? fresh.balance : account.balance,
+              feeApplied: existing.fee,
+            };
+          }
+        }
+
         const txEntity = Transaction.create({
           accountId: account.id,
           type: TransactionType.WITHDRAW,
@@ -159,18 +203,15 @@ export class AccountTransactionService {
           await this.transactionRepository.create(txEntity, tx);
         } catch (e) {
           if (isUniqueError(e) && input.idempotencyKey) {
+            // Query outside the aborted transaction
             const existing =
-              await this.transactionRepository.findByTypeAndIdempotencyKey(
-                {
-                  type: TransactionType.WITHDRAW,
-                  idempotencyKey: input.idempotencyKey,
-                },
-                tx,
-              );
-            const fresh = await this.accountRepository.findById(
-              { accountId: input.accountId },
-              tx,
-            );
+              await this.transactionRepository.findByTypeAndIdempotencyKey({
+                type: TransactionType.WITHDRAW,
+                idempotencyKey: input.idempotencyKey,
+              });
+            const fresh = await this.accountRepository.findById({
+              accountId: input.accountId,
+            });
             return {
               transactionId: existing?.id.toValue?.() ?? 'idempotent',
               accountId: input.accountId,
@@ -274,6 +315,34 @@ export class AccountTransactionService {
             throw new transactionErrors.InsufficientFundsConsideringCreditLimitError();
           }
 
+          // Idempotency pre-check for transfer to avoid unique error logs
+          if (input.idempotencyKey) {
+            const existing = await this.transferRepository.findByIdempotencyKey(
+              { idempotencyKey: input.idempotencyKey },
+              tx,
+            );
+            if (existing) {
+              const [freshFrom, freshTo] = await Promise.all([
+                this.accountRepository.findById(
+                  { accountId: input.fromAccountId },
+                  tx,
+                ),
+                this.accountRepository.findById(
+                  { accountId: input.toAccountId },
+                  tx,
+                ),
+              ]);
+              return {
+                transferId: existing.id.toValue(),
+                fromAccountId: input.fromAccountId,
+                toAccountId: input.toAccountId,
+                fromNewBalance: freshFrom ? freshFrom.balance : from.balance,
+                toNewBalance: freshTo ? freshTo.balance : to.balance,
+                feeApplied: existing.feeFrom,
+              };
+            }
+          }
+
           const transfer = Transfer.create({
             fromAccountId: from.id,
             toAccountId: to.id,
@@ -285,20 +354,18 @@ export class AccountTransactionService {
             await this.transferRepository.create(transfer, tx);
           } catch (e) {
             if (isUniqueError(e) && input.idempotencyKey) {
+              // Query outside the aborted transaction
               const existing =
-                await this.transferRepository.findByIdempotencyKey(
-                  { idempotencyKey: input.idempotencyKey },
-                  tx,
-                );
+                await this.transferRepository.findByIdempotencyKey({
+                  idempotencyKey: input.idempotencyKey,
+                });
               const [freshFrom, freshTo] = await Promise.all([
-                this.accountRepository.findById(
-                  { accountId: input.fromAccountId },
-                  tx,
-                ),
-                this.accountRepository.findById(
-                  { accountId: input.toAccountId },
-                  tx,
-                ),
+                this.accountRepository.findById({
+                  accountId: input.fromAccountId,
+                }),
+                this.accountRepository.findById({
+                  accountId: input.toAccountId,
+                }),
               ]);
               return {
                 transferId: existing?.id.toValue?.() ?? 'idempotent',
