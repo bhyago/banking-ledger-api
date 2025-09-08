@@ -1,0 +1,35 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
+import type { TransactionRepository } from '@/modules/transaction/repositories/transaction-repository';
+import type { Transaction } from '@/modules/transaction/entities/transaction';
+import { PrismaTransactionMapper } from '../mappers/transaction-mapper';
+import type { UnitOfWorkTx } from '@/common/uow';
+import type { PrismaTxAdapter } from '../prisma-unit-of-work';
+
+@Injectable()
+export class PrismaTransactionRepository implements TransactionRepository {
+  constructor(private prisma: PrismaService) {}
+
+  async create(input: Transaction, tx?: UnitOfWorkTx): Promise<{ id: string }> {
+    const client = tx ? (tx as PrismaTxAdapter).client : this.prisma;
+    const row = await client.transaction.create({
+      data: PrismaTransactionMapper.toPrisma(input),
+    });
+    return { id: row.id };
+  }
+
+  async findByTypeAndIdempotencyKey(
+    input: { type: any; idempotencyKey: string },
+    tx?: UnitOfWorkTx,
+  ): Promise<Transaction | null> {
+    const client = tx ? (tx as PrismaTxAdapter).client : this.prisma;
+    const row = await client.transaction.findFirst({
+      where: {
+        type: input.type,
+        idempotencyKey: input.idempotencyKey,
+      },
+    });
+    if (!row) return null;
+    return PrismaTransactionMapper.toDomain(row);
+  }
+}

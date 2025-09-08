@@ -1,0 +1,11 @@
+model FeePolicy {
+  id              String          @id @default(ulid())
+  transactionType TransactionType @map("transaction_type")
+  flatFeeCents    BigInt          @default(0) @map("flat_fee_cents") @db.BigInt
+  percentBps      Int             @default(0) @map("percent_bps")
+  startsAt        DateTime        @map("starts_at") @db.Timestamptz
+  endsAt          DateTime        @map("ends_at") @db.Timestamptz
+
+  @@index([transactionType, startsAt, endsAt], name: "idx_fee_tx_type_range")
+  @@map("fee_policy")
+}

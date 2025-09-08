@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  postgres:
+    container_name: banking-ledger-pg
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: banking-ledger
+      PGDATA: /data/postgres
+    volumes:
+      - ./data/pg:/data/postgres
+
+  rabbitmq:
+    container_name: banking-ledger-rmq
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    ports:
+      - "5672:5672"  
+      - "15672:15672" 
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: rabbitmq
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+
+networks:
+  default:
+    name: banking-ledger-net
