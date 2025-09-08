@@ -127,7 +127,8 @@ IMPORTANTE
 
 ### Docker Compose
 
-- Subir dependências: `pnpm db:up` (ou `docker compose up -d`)
+- Subir dependências: `docker compose up -d`
+- Derrubar dependências: `docker compose down`
 - Serviços: Postgres em `localhost:5432` (DB: `banking-ledger`), RabbitMQ em `localhost:5672` (UI: `http://localhost:15672`, usuário/senha: `rabbitmq`/`rabbitmq`).
 - `.env` sugerido (host):
   - `DATABASE_URL=postgresql://postgres:docker@localhost:5432/banking-ledger?schema=public`
@@ -136,9 +137,12 @@ IMPORTANTE
 
 Scripts úteis (pnpm)
 
-- `pnpm db:up` / `pnpm db:down` – sobe/derruba Postgres e RabbitMQ.
 - `pnpm db:migrate` – `prisma generate` + `prisma migrate dev`.
 - `pnpm db:seed` – executa o seed do Prisma.
+
+Dependências locais
+
+- Alternativamente ao Docker, você pode manter Postgres e RabbitMQ instalados localmente. Ajuste as variáveis de ambiente conforme seu setup.
 
 <a id="testes"></a>
 
