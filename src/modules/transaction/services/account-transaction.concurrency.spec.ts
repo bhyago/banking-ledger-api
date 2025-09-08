@@ -130,7 +130,6 @@ describe('AccountTransactionService concurrency (transfer)', () => {
       transactionErrors.InsufficientFundsConsideringCreditLimitError,
     );
 
-    // Final balances reflect a single successful transfer of 70
     expect(from.balance).toBe(30);
     const credited = to1.balance === 70 ? to1 : to2;
     const untouched = credited === to1 ? to2 : to1;

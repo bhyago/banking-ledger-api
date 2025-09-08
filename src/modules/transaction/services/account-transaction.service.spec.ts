@@ -168,11 +168,9 @@ describe('AccountTransactionService.deposit', () => {
     account.balance = 200;
 
     (accountRepository.findById as any).mockResolvedValue(account);
-    // Simulate unique constraint (duplicate idempotency key)
     (transactionRepository.create as any).mockRejectedValueOnce({
       code: 'P2002',
     });
-    // Return existing transaction for the idempotency key
     (
       transactionRepository.findByTypeAndIdempotencyKey as any
     ).mockResolvedValueOnce(

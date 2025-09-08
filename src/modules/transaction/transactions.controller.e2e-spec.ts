@@ -24,10 +24,8 @@ describe('Transactions HTTP (E2E)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    // Queue providers are fakes, but we no longer introspect into them.
     await app.init();
 
-    // Ensure seed accounts exist in main DB
     const prisma = moduleRef.get(PrismaService);
     const now = new Date();
     const ensure = async (id: string, balance: bigint) =>
@@ -52,7 +50,7 @@ describe('Transactions HTTP (E2E)', () => {
     if (app) await app.close();
   });
 
-  test('[POST] /transactions/:accountId/deposit enfileira e retorna 202', async () => {
+  test('[POST] /transactions/:accountId/deposit enqueues and returns 202', async () => {
     const res = await request(app.getHttpServer())
       .post(`/transactions/${ULID.ACC1}/deposit`)
       .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440017')
@@ -65,25 +63,22 @@ describe('Transactions HTTP (E2E)', () => {
         id: '550e8400-e29b-41d4-a716-446655440017',
       }),
     );
-    // Request enfileirada com sucesso
   });
 
-  test('[POST] /transactions/:accountId/withdraw enfileira e retorna 202', async () => {
+  test('[POST] /transactions/:accountId/withdraw enqueues and returns 202', async () => {
     const res = await request(app.getHttpServer())
       .post(`/transactions/${ULID.ACC2}/withdraw`)
       .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440018')
       .send({ amount: 50, description: 'cash' });
 
     expect(res.statusCode).toBe(202);
-    // Request enfileirada com sucesso
   });
 
-  test('Bootstrap registra consumidores das filas esperadas', async () => {
-    // Com fakes, o bootstrap ocorre sem side-effects externos; apenas valida inicialização sem erro
+  test('Bootstrap registers consumers for expected queues', async () => {
     expect(app).toBeDefined();
   });
 
-  test('Deposit validações de schema (amount inválido e descrição longa)', async () => {
+  test('Deposit schema validations (invalid amount and long description)', async () => {
     const res1 = await request(app.getHttpServer())
       .post(`/transactions/${ULID.ACC3}/deposit`)
       .send({ amount: -1 });
@@ -95,7 +90,7 @@ describe('Transactions HTTP (E2E)', () => {
     expect([400, 422]).toContain(res2.statusCode);
   });
 
-  test('Withdraw validações de schema (amount inválido)', async () => {
+  test('Withdraw schema validations (invalid amount)', async () => {
     const res = await request(app.getHttpServer())
       .post(`/transactions/${ULID.ACC3}/withdraw`)
       .send({ amount: 0 });
