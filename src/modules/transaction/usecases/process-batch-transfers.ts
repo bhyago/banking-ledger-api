@@ -78,7 +78,6 @@ export class ProcessBatchTransfersUseCase {
               tx,
             );
 
-          // Pre-check: skip items that are already applied (idempotent)
           const existingMap = new Map<string, Transfer | null>();
           for (const it of input.items) {
             const existing = await this.transferRepository.findByIdempotencyKey(

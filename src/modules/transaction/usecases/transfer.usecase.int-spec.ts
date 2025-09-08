@@ -89,7 +89,6 @@ describe('Transfer integration (service + use case + locks)', () => {
 
   beforeEach(async () => {
     accounts = new InMemoryAccountRepository();
-    // seed
     const from = Account.create(
       { cpf: '00011122233', fullName: 'From I', creditLimit: 0 },
       new UniqueEntityID('acc-i-from'),

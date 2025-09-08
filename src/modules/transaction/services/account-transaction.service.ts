@@ -81,7 +81,6 @@ export class AccountTransactionService {
           await this.transactionRepository.create(transactionEntity, tx);
         } catch (e) {
           if (isUniqueError(e) && input.idempotencyKey) {
-            // Query outside the aborted transaction
             const existing =
               await this.transactionRepository.findByTypeAndIdempotencyKey({
                 type: TransactionType.DEPOSIT,

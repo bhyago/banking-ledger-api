@@ -28,15 +28,14 @@ describe('LedgerController (E2E)', () => {
     if (app) await app.close();
   });
 
-  test('404 para conta inexistente', async () => {
+  test('404 for non-existent account', async () => {
     const res = await request(app.getHttpServer())
       .get(`/accounts/${ULID.ACC8}/ledger`)
       .query({ page: 1, perPage: 10, order: 'asc' });
     expect(res.statusCode).toBe(404);
   });
 
-  test('lista lançamentos com paginação e ordenação', async () => {
-    // use a fresh ULID to avoid interference with previous runs
+  test('lists ledger entries with pagination and ordering', async () => {
     const accountId = ulid();
     const now = new Date();
     await prisma.account.upsert({
