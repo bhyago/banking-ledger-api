@@ -9,6 +9,7 @@ import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-m
 import { InProcessEmitQueue } from '../../fakes/inprocess-queue';
 import { FakeConsumeQueue } from '../../fakes/fake-queue';
 import { QUEUES } from '@/modules/transaction/async/messages';
+import { ULID } from 'test/ids';
 
 async function waitFor<T>(
   fn: () => Promise<T>,
@@ -30,8 +31,8 @@ describe('Transactions + DB (E2E)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 
-  const accA = 'acc-db-A';
-  const accB = 'acc-db-B';
+  const accA = ULID.ACC1;
+  const accB = ULID.ACC2;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -54,7 +55,7 @@ describe('Transactions + DB (E2E)', () => {
       update: { balanceCents: 100_00n, creditLimitCents: 0n, updatedAt: now },
       create: {
         id: accA,
-        number: '900001',
+        number: accA.slice(-6),
         balanceCents: 100_00n,
         creditLimitCents: 0n,
         createdAt: now,
@@ -66,7 +67,7 @@ describe('Transactions + DB (E2E)', () => {
       update: { balanceCents: 50_00n, creditLimitCents: 0n, updatedAt: now },
       create: {
         id: accB,
-        number: '900002',
+        number: accB.slice(-6),
         balanceCents: 50_00n,
         creditLimitCents: 0n,
         createdAt: now,
@@ -82,7 +83,7 @@ describe('Transactions + DB (E2E)', () => {
   test('Deposit aplica no banco e gera ledger/transaction', async () => {
     const res = await request(app.getHttpServer())
       .post(`/transactions/${accA}/deposit`)
-      .set('Idempotency-Key', 'db-idemp-1')
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440013')
       .send({ amount: 25.5, description: 'dep db' });
     expect(res.statusCode).toBe(202);
 
@@ -105,6 +106,7 @@ describe('Transactions + DB (E2E)', () => {
   test('Withdraw aplica no banco e gera ledger/transaction', async () => {
     const res = await request(app.getHttpServer())
       .post(`/transactions/${accA}/withdraw`)
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440019')
       .send({ amount: 20, description: 'cash db' });
     expect(res.statusCode).toBe(202);
 
@@ -125,12 +127,15 @@ describe('Transactions + DB (E2E)', () => {
   });
 
   test('Transfer aplica no banco (debita A e credita B)', async () => {
-    const res = await request(app.getHttpServer()).post('/transfer').send({
-      fromAccountId: accA,
-      toAccountId: accB,
-      amount: 5,
-      description: 'tr db',
-    });
+    const res = await request(app.getHttpServer())
+      .post('/transfer')
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440020')
+      .send({
+        fromAccountId: accA,
+        toAccountId: accB,
+        amount: 5,
+        description: 'tr db',
+      });
     expect(res.statusCode).toBe(202);
 
     const a = await waitFor(

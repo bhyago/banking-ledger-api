@@ -4,6 +4,7 @@ import type { AccountTransactionService } from '../services/account-transaction.
 import type { ProcessBatchAccountTransactionsUseCase } from './process-batch-account-transactions';
 import { accountErrors } from '@/modules/account/errors/account-errors';
 import { transactionErrors } from '../errors/transaction-errors';
+import { ULID } from 'test/ids';
 
 const makeTxService = () => {
   return {
@@ -29,20 +30,20 @@ describe('WithdrawUseCase', () => {
 
   it('should call batch for single item and map the output', async () => {
     const input = {
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       amount: 80,
       description: 'ATM',
     } as any;
 
     (batch.execute as any).mockResolvedValueOnce({
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       applied: 1,
       finalBalance: 920,
       results: [
         {
           type: 'WITHDRAW',
           transactionId: 'tx-1',
-          accountId: 'acc-1',
+          accountId: ULID.ACC1,
           newBalance: 920,
           feeApplied: 3,
         },
@@ -55,14 +56,14 @@ describe('WithdrawUseCase', () => {
     expect(txService.withdraw).not.toHaveBeenCalled();
     expect(result).toEqual({
       transactionId: 'tx-1',
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       newBalance: 920,
       feeApplied: 3,
     });
   });
 
   it('should propagate AccountNotFoundError from batch executor', async () => {
-    const input = { accountId: 'missing', amount: 50 } as any;
+    const input = { accountId: ULID.ACC2, amount: 50 } as any;
     const error = new accountErrors.AccountNotFoundError();
     (batch.execute as any).mockRejectedValueOnce(error);
 
@@ -73,7 +74,7 @@ describe('WithdrawUseCase', () => {
   });
 
   it('should propagate InsufficientFundsConsideringCreditLimitError from batch executor', async () => {
-    const input = { accountId: 'acc-1', amount: 1000 } as any;
+    const input = { accountId: ULID.ACC1, amount: 1000 } as any;
     const error =
       new transactionErrors.InsufficientFundsConsideringCreditLimitError();
     (batch.execute as any).mockRejectedValueOnce(error);
@@ -98,12 +99,12 @@ describe('WithdrawUseCase - batch path', () => {
 
   it('groups by account and calls batch for multiple items', async () => {
     const items = [
-      { accountId: 'acc-1', amount: 40, description: 'atm' },
-      { accountId: 'acc-1', amount: 10, description: 'fee' },
+      { accountId: ULID.ACC1, amount: 40, description: 'atm' },
+      { accountId: ULID.ACC1, amount: 10, description: 'fee' },
     ] as any;
 
     (batch.execute as any).mockResolvedValueOnce({
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       applied: 2,
       finalBalance: 50,
       results: [

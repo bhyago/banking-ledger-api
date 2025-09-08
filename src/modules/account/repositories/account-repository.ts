@@ -8,4 +8,5 @@ export abstract class AccountRepository {
     tx?: UnitOfWorkTx,
   ): Promise<Account | null>;
   abstract update(input: Account, tx?: UnitOfWorkTx): Promise<void>;
+  abstract findActiveByCPF(input: { cpf: string }): Promise<Account | null>;
 }

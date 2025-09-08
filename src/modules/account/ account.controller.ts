@@ -25,6 +25,11 @@ import {
 } from './dtos/get-account-by-id';
 import { GetAccountByIdUseCase } from './usecases/get-account-by-id';
 import { ZodValidationPipe } from 'nestjs-zod';
+import {
+  updateAccountDTO,
+  updateAccountSchemaValidation,
+} from './dtos/update-account';
+import { UpdateAccountUseCase } from './usecases/update-account';
 
 @ApiTags('account')
 @Controller('account')
@@ -32,6 +37,7 @@ export class AccountController {
   constructor(
     private readonly createAccountUseCase: CreateAccountUseCase,
     private readonly getAccountByIdUseCase: GetAccountByIdUseCase,
+    private readonly updateAccountUseCase: UpdateAccountUseCase,
   ) {}
 
   @Post()
@@ -53,6 +59,36 @@ export class AccountController {
     body: createAccountDTO.CreateAccountInput,
   ): Promise<createAccountDTO.CreateAccountOutput> {
     return this.createAccountUseCase.execute(body);
+  }
+
+  @Post(':accountId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Atualizar dados da conta (fullName/cpf/creditLimit)',
+  })
+  @ApiParam({ name: 'accountId', required: true })
+  @ApiOkResponse({ description: 'Conta atualizada' })
+  @ApiNotFoundResponse({
+    description: 'Conta não encontrada',
+    type: ErrorResponseDTO,
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Falha de validação',
+    type: ErrorResponseDTO,
+  })
+  async updateAccount(
+    @Param(new ZodValidationPipe(updateAccountSchemaValidation.params))
+    params: updateAccountDTO.UpdateAccountParams,
+    @Body(new ZodValidationPipe(updateAccountSchemaValidation.body))
+    body: updateAccountDTO.UpdateAccountBody,
+  ): Promise<updateAccountDTO.UpdateAccountOutput> {
+    const updated = await this.updateAccountUseCase.execute({
+      accountId: params.accountId,
+      fullName: body.fullName,
+      cpf: body.cpf,
+      creditLimit: (body as any).creditLimit,
+    });
+    return updated as any;
   }
 
   @Get(':accountId')

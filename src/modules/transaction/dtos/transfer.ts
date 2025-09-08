@@ -21,10 +21,10 @@ export const transferSchemaValidation = {
   }),
   headers: z
     .object({
-      'Idempotency-Key': z
+      'idempotency-key': z
         .string()
-        .min(8)
-        .describe('Chave para garantir idempotência da requisição.'),
+        .uuid()
+        .describe('Chave de idempotência (UUID v4).'),
     })
     .passthrough(),
   response: z.object({

@@ -27,7 +27,7 @@ model Transaction {
   relatedAccountId String?           @map("related_account_id")
   status           TransactionStatus @default(PENDING)
   transferId       String?           @map("transfer_id")
-  idempotencyKey   String?           @map("idempotency_key") @db.VarChar(255)
+  idempotencyKey   String?           @map("idempotency_key") @db.Uuid
   createdAt        DateTime          @map("created_at") @db.Timestamptz
 
   ledger LedgerEntry[]
@@ -46,7 +46,7 @@ model Transfer {
   amountCents    BigInt         @map("amount_cents") @db.BigInt
   feeFromCents   BigInt         @default(0) @map("fee_from_cents") @db.BigInt
   status         TransferStatus @default(PENDING)
-  idempotencyKey String         @unique @map("idempotency_key")
+  idempotencyKey String         @unique @map("idempotency_key") @db.Uuid
   createdAt      DateTime       @map("created_at") @db.Timestamptz
 
   ledger LedgerEntry[]

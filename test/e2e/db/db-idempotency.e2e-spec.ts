@@ -8,6 +8,7 @@ import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-t
 import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
 import { InProcessEmitQueue } from '../../fakes/inprocess-queue';
 import { FakeConsumeQueue } from '../../fakes/fake-queue';
+import { ULID } from 'test/ids';
 
 async function waitUntil(
   predicate: () => Promise<boolean>,
@@ -45,7 +46,7 @@ describe('Idempotency (E2E + DB)', () => {
   });
 
   test('Duplicate deposit with same Idempotency-Key applies only once', async () => {
-    const id = 'acc-idepo-1';
+    const id = ULID.ACC1;
     const now = new Date();
     await prisma.account.upsert({
       where: { id },
@@ -60,7 +61,7 @@ describe('Idempotency (E2E + DB)', () => {
       },
     });
 
-    const key = 'dup-deposit-1';
+    const key = '550e8400-e29b-41d4-a716-446655440010';
     await request(app.getHttpServer())
       .post(`/transactions/${id}/deposit`)
       .set('Idempotency-Key', key)
@@ -91,7 +92,7 @@ describe('Idempotency (E2E + DB)', () => {
   });
 
   test('Duplicate withdraw with same Idempotency-Key applies only once', async () => {
-    const id = 'acc-iwith-1';
+    const id = ULID.ACC2;
     const now = new Date();
     await prisma.account.upsert({
       where: { id },
@@ -106,7 +107,7 @@ describe('Idempotency (E2E + DB)', () => {
       },
     });
 
-    const key = 'dup-withdraw-1';
+    const key = '550e8400-e29b-41d4-a716-446655440011';
     await request(app.getHttpServer())
       .post(`/transactions/${id}/withdraw`)
       .set('Idempotency-Key', key)
@@ -135,8 +136,8 @@ describe('Idempotency (E2E + DB)', () => {
   });
 
   test('Duplicate transfer with same Idempotency-Key applies only once', async () => {
-    const from = 'acc-itran-1';
-    const to = 'acc-itran-2';
+    const from = ULID.ACC3;
+    const to = ULID.ACC4;
     const now = new Date();
     await prisma.account.upsert({
       where: { id: from },
@@ -163,7 +164,7 @@ describe('Idempotency (E2E + DB)', () => {
       },
     });
 
-    const key = 'dup-transfer-1';
+    const key = '550e8400-e29b-41d4-a716-446655440012';
     await request(app.getHttpServer())
       .post('/transfer')
       .set('Idempotency-Key', key)

@@ -16,6 +16,14 @@ export const KNOWN_ERRORS: KnownErrorInfo[] = [
     status: HttpStatus.NOT_FOUND,
   },
   {
+    match: accountErrors.CPFInUseForActiveAccountError,
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
+  {
+    match: accountErrors.InvalidCPFError,
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
+  {
     match: transactionErrors.InsufficientFundsConsideringCreditLimitError,
     status: HttpStatus.UNPROCESSABLE_ENTITY,
   },

@@ -3,10 +3,14 @@ import type { transferDTO } from '../dtos/transfer';
 import { OnEvent } from '@nestjs/event-emitter';
 import { QUEUES } from '../async/messages';
 import { ProcessBatchTransfersUseCase } from './process-batch-transfers';
+import { AccountTransactionService } from '../services/account-transaction.service';
 
 @Injectable()
 export class TransferUseCase {
-  constructor(private readonly batchTransfers: ProcessBatchTransfersUseCase) {}
+  constructor(
+    private readonly txService: AccountTransactionService,
+    private readonly batchTransfers: ProcessBatchTransfersUseCase,
+  ) {}
 
   @OnEvent(QUEUES.transfer, { async: true })
   async execute(

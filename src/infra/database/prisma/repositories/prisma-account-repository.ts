@@ -31,4 +31,12 @@ export class PrismaAccountRepository implements AccountRepository {
       data: PrismaAccountMapper.toPrisma(input),
     });
   }
+
+  async findActiveByCPF(input: { cpf: string }): Promise<Account | null> {
+    const row = await this.prisma.account.findFirst({
+      where: { cpf: input.cpf, deletedAt: null },
+    });
+    if (!row) return null;
+    return PrismaAccountMapper.toDomain(row);
+  }
 }

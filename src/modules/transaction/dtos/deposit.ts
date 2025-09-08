@@ -5,8 +5,16 @@ import { z } from 'zod';
 
 export const depositSchemaValidation = {
   params: z.object({
-    accountId: z.string().describe('Identificador ULID da conta.'),
+    accountId: z.string().ulid().describe('Identificador ULID da conta.'),
   }),
+  headers: z
+    .object({
+      'idempotency-key': z
+        .string()
+        .uuid()
+        .describe('Chave de idempotência (UUID v4).'),
+    })
+    .passthrough(),
   body: z.object({
     amount: z
       .number()
@@ -19,8 +27,11 @@ export const depositSchemaValidation = {
       .describe('Descrição opcional do depósito.'),
   }),
   response: z.object({
-    transactionId: z.string().describe('Identificador da transação gerada.'),
-    accountId: z.string().describe('Identificador da conta.'),
+    transactionId: z
+      .string()
+      .ulid()
+      .describe('Identificador da transação gerada.'),
+    accountId: z.string().ulid().describe('Identificador da conta.'),
     newBalance: z.number().min(0).describe('Novo saldo após o depósito.'),
   }),
 } satisfies SchemaValidation;

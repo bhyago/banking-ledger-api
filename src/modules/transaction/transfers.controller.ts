@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,7 +21,7 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { transferDTO, transferSchemaValidation } from './dtos/transfer';
 import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
 import { QUEUES } from './async/messages';
-import { randomUUID } from 'crypto';
+import { IdempotencyKeyGuard } from '@/infra/http/guards/idempotency-key.guard';
 
 @ApiTags('transfer')
 @Controller('transfer')
@@ -28,6 +29,7 @@ export class TransferController {
   constructor(private readonly queueSender: SendMessageToQueueProvider) {}
 
   @Post()
+  @UseGuards(IdempotencyKeyGuard)
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     summary: 'Transferir',
@@ -35,9 +37,9 @@ export class TransferController {
   })
   @ApiHeader({
     name: 'idempotency-key',
-    required: false,
-    description: 'Chave para garantir idempotência da operação.',
-    example: '8d0a153e-2a5a-4c0b-89c7-9f3e4a2b1c77',
+    required: true,
+    description: 'Chave de idempotência (UUID v4).',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @ApiAcceptedResponse({
     description: 'Solicitação enfileirada',
@@ -58,9 +60,9 @@ export class TransferController {
   async transfer(
     @Body(new ZodValidationPipe(transferSchemaValidation.body))
     body: transferDTO.TransferBodyDTO,
-    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('idempotency-key') idempotencyKey: string,
   ): Promise<{ queued: true; id: string; queuedAt: Date }> {
-    const id = idempotencyKey || randomUUID();
+    const id = idempotencyKey;
     await this.queueSender.execute({
       queueName: QUEUES.transfer,
       object: {
@@ -69,7 +71,7 @@ export class TransferController {
         toAccountId: body.toAccountId,
         amount: body.amount,
         description: body.description ?? undefined,
-        idempotencyKey: idempotencyKey,
+        idempotencyKey: id,
       },
     });
     return { queued: true, id, queuedAt: new Date() };

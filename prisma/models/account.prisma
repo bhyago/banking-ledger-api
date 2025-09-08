@@ -3,6 +3,8 @@ model Account {
   number           String    @unique
   balanceCents     BigInt    @default(0) @map("balance_cents") @db.BigInt
   creditLimitCents BigInt    @default(0) @map("credit_limit_cents") @db.BigInt
+  fullName         String?   @map("full_name") @db.VarChar(120)
+  cpf              String?   @db.VarChar(11)
   createdAt        DateTime  @map("created_at") @db.Timestamptz
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz

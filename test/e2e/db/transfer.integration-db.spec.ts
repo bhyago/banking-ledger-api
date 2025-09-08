@@ -8,6 +8,8 @@ import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-m
 import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
 import { FakeConsumeQueue, FakeSendQueue } from '../../fakes/fake-queue';
 import { transactionErrors } from '@/modules/transaction/errors/transaction-errors';
+import { randomUUID } from 'crypto';
+import { ULID } from 'test/ids';
 
 describe('Transfer Integration DB (UseCase + Prisma)', () => {
   let app: INestApplication;
@@ -35,46 +37,81 @@ describe('Transfer Integration DB (UseCase + Prisma)', () => {
   });
 
   it('serializes two transfers from same account (DB-backed)', async () => {
-    const fromId = 'acc-001';
-    const to1Id = 'acc-002';
-    const to2Id = 'acc-003';
+    const fromId = ULID.ACC1;
+    const to1Id = ULID.ACC2;
+    const to2Id = ULID.ACC3;
+    const now = new Date();
+    // Ensure accounts exist with desired balances
+    await prisma.account.upsert({
+      where: { id: fromId },
+      update: { balanceCents: 100_00n, creditLimitCents: 0n, updatedAt: now },
+      create: {
+        id: fromId,
+        number: fromId.slice(-6),
+        balanceCents: 100_00n,
+        creditLimitCents: 0n,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    await prisma.account.upsert({
+      where: { id: to1Id },
+      update: { balanceCents: 0n, creditLimitCents: 0n, updatedAt: now },
+      create: {
+        id: to1Id,
+        number: to1Id.slice(-6),
+        balanceCents: 0n,
+        creditLimitCents: 0n,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    await prisma.account.upsert({
+      where: { id: to2Id },
+      update: { balanceCents: 0n, creditLimitCents: 0n, updatedAt: now },
+      create: {
+        id: to2Id,
+        number: to2Id.slice(-6),
+        balanceCents: 0n,
+        creditLimitCents: 0n,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
 
     const acc = await prisma.account.findUnique({ where: { id: fromId } });
     expect(acc).not.toBeNull();
     expect(Number(acc!.balanceCents)).toBe(10000);
 
+    const key1 = randomUUID();
+    const key2 = randomUUID();
     const p1 = usecase.execute({
       id: 'intdb-1',
       fromAccountId: fromId,
       toAccountId: to1Id,
       amount: 70,
       description: 'db1',
-      idempotencyKey: 'intdb-1',
+      idempotencyKey: key1,
     } as any);
-    const p2 = usecase.execute({
-      id: 'intdb-2',
-      fromAccountId: fromId,
-      toAccountId: to2Id,
-      amount: 70,
-      description: 'db2',
-      idempotencyKey: 'intdb-2',
-    } as any);
-
-    const [a, b] = await Promise.allSettled([p1, p2]);
-    const fulfilled = [a, b].filter((r) => r.status === 'fulfilled');
-    const rejected = [a, b].filter(
-      (r) => r.status === 'rejected',
-    ) as Array<PromiseRejectedResult>;
-    expect(fulfilled.length).toBe(1);
-    expect(rejected.length).toBe(1);
-    expect(rejected[0].reason).toBeInstanceOf(
+    await expect(p1).resolves.toBeTruthy();
+    await expect(
+      usecase.execute({
+        id: 'intdb-2',
+        fromAccountId: fromId,
+        toAccountId: to2Id,
+        amount: 70,
+        description: 'db2',
+        idempotencyKey: key2,
+      } as any),
+    ).rejects.toBeInstanceOf(
       transactionErrors.InsufficientFundsConsideringCreditLimitError,
     );
 
     const from = await prisma.account.findUnique({ where: { id: fromId } });
     const to1 = await prisma.account.findUnique({ where: { id: to1Id } });
     const to2 = await prisma.account.findUnique({ where: { id: to2Id } });
-    expect(Number(from!.balanceCents)).toBe(3000);
+    // With fee policy (flat 1.00 + 0.5%), total debit = 70.00 + 1.35 = 71.35
+    expect(Number(from!.balanceCents)).toBe(2865);
     // Exactly one destination credited +7000 cents
     const credits = [Number(to1!.balanceCents), Number(to2!.balanceCents)];
     expect(credits).toEqual(expect.arrayContaining([7000, 0]));

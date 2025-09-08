@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GetAccountLedgerUseCase } from './get-account-ledger';
 import type { PrismaService } from '@/infra/database/prisma/prisma.service';
 import { accountErrors } from '@/modules/account/errors/account-errors';
+import { ULID } from 'test/ids';
 
 const makePrisma = () => {
   return {
@@ -29,7 +30,7 @@ describe('GetAccountLedgerUseCase', () => {
 
     await expect(() =>
       useCase.execute({
-        accountId: '01J7YQ3K9Y9Z2R9Q9ZQ9ZQ9ZQ9',
+        accountId: ULID.ACC1,
         page: 1,
         perPage: 10,
         order: 'asc',
@@ -42,13 +43,13 @@ describe('GetAccountLedgerUseCase', () => {
   });
 
   it('should list ledger entries with pagination meta (asc)', async () => {
-    (prisma.account.findUnique as any).mockResolvedValueOnce({ id: 'acc-1' });
+    (prisma.account.findUnique as any).mockResolvedValueOnce({ id: ULID.ACC1 });
     (prisma.ledgerEntry.count as any).mockResolvedValueOnce(3);
     const now = new Date();
     (prisma.ledgerEntry.findMany as any).mockResolvedValueOnce([
       {
         id: '01LEDGER1',
-        accountId: 'acc-1',
+        accountId: ULID.ACC1,
         transactionId: '01TX1',
         transferId: null,
         debitCents: BigInt(0),
@@ -58,7 +59,7 @@ describe('GetAccountLedgerUseCase', () => {
       },
       {
         id: '01LEDGER2',
-        accountId: 'acc-1',
+        accountId: ULID.ACC1,
         transactionId: null,
         transferId: '01TR1',
         debitCents: BigInt(5000),
@@ -69,13 +70,13 @@ describe('GetAccountLedgerUseCase', () => {
     ]);
 
     const result = await useCase.execute({
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       page: 1,
       perPage: 2,
       order: 'asc',
     } as any);
 
-    expect(result.accountId).toBe('acc-1');
+    expect(result.accountId).toBe(ULID.ACC1);
     expect(result.ledger).toHaveLength(2);
     expect(result.ledger[0]).toEqual(
       expect.objectContaining({
@@ -111,10 +112,10 @@ describe('GetAccountLedgerUseCase', () => {
     });
 
     expect(prisma.ledgerEntry.count).toHaveBeenCalledWith({
-      where: { accountId: 'acc-1' },
+      where: { accountId: ULID.ACC1 },
     });
     expect(prisma.ledgerEntry.findMany).toHaveBeenCalledWith({
-      where: { accountId: 'acc-1' },
+      where: { accountId: ULID.ACC1 },
       orderBy: { createdAt: 'asc' },
       skip: 0,
       take: 2,
@@ -122,7 +123,7 @@ describe('GetAccountLedgerUseCase', () => {
   });
 
   it('should compute skip/take and meta for last page (desc)', async () => {
-    (prisma.account.findUnique as any).mockResolvedValueOnce({ id: 'acc-1' });
+    (prisma.account.findUnique as any).mockResolvedValueOnce({ id: ULID.ACC1 });
     (prisma.ledgerEntry.count as any).mockResolvedValueOnce(3);
     (prisma.ledgerEntry.findMany as any).mockResolvedValueOnce([
       {
@@ -138,7 +139,7 @@ describe('GetAccountLedgerUseCase', () => {
     ]);
 
     const input = {
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       page: 2,
       perPage: 2,
       order: 'desc',
@@ -156,7 +157,7 @@ describe('GetAccountLedgerUseCase', () => {
     });
 
     expect(prisma.ledgerEntry.findMany).toHaveBeenCalledWith({
-      where: { accountId: 'acc-1' },
+      where: { accountId: ULID.ACC1 },
       orderBy: { createdAt: 'desc' },
       skip: 2,
       take: 2,

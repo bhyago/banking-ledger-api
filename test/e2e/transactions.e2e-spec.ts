@@ -8,6 +8,7 @@ import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-t
 import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
 import { FakeConsumeQueue, FakeSendQueue } from '../fakes/fake-queue';
 import { QUEUES } from '@/modules/transaction/async/messages';
+import { ULID } from 'test/ids';
 
 describe('Transactions HTTP (E2E)', () => {
   let app: INestApplication;
@@ -40,20 +41,23 @@ describe('Transactions HTTP (E2E)', () => {
 
   test('[POST] /transactions/:accountId/deposit enfileira e retorna 202', async () => {
     const res = await request(app.getHttpServer())
-      .post('/transactions/acc-123/deposit')
-      .set('Idempotency-Key', 'idemp-1')
+      .post(`/transactions/${ULID.ACC1}/deposit`)
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440017')
       .send({ amount: 100.5, description: 'dep test' });
 
     expect(res.statusCode).toBe(202);
     expect(res.body).toEqual(
-      expect.objectContaining({ queued: true, id: 'idemp-1' }),
+      expect.objectContaining({
+        queued: true,
+        id: '550e8400-e29b-41d4-a716-446655440017',
+      }),
     );
     expect(fakeQueue.published).toContainEqual(
       expect.objectContaining({
         queueName: QUEUES.deposit,
         object: expect.objectContaining({
-          id: 'idemp-1',
-          accountId: 'acc-123',
+          id: '550e8400-e29b-41d4-a716-446655440017',
+          accountId: ULID.ACC1,
           amount: 100.5,
           description: 'dep test',
         }),
@@ -63,7 +67,8 @@ describe('Transactions HTTP (E2E)', () => {
 
   test('[POST] /transactions/:accountId/withdraw enfileira e retorna 202', async () => {
     const res = await request(app.getHttpServer())
-      .post('/transactions/acc-555/withdraw')
+      .post(`/transactions/${ULID.ACC2}/withdraw`)
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440018')
       .send({ amount: 50, description: 'cash' });
 
     expect(res.statusCode).toBe(202);
@@ -72,7 +77,7 @@ describe('Transactions HTTP (E2E)', () => {
       expect.objectContaining({
         queueName: QUEUES.withdraw,
         object: expect.objectContaining({
-          accountId: 'acc-555',
+          accountId: ULID.ACC2,
           amount: 50,
           description: 'cash',
         }),
@@ -88,36 +93,23 @@ describe('Transactions HTTP (E2E)', () => {
     expect(names.has(QUEUES.transfer)).toBeTruthy();
   });
 
-  test('Deposit sem Idempotency-Key gera id e retorna 202', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/transactions/acc-777/deposit')
-      .send({ amount: 1 });
-
-    expect(res.statusCode).toBe(202);
-    expect(res.body.queued).toBe(true);
-    const id: string = res.body.id;
-    expect(typeof id).toBe('string');
-    // id do Node randomUUID: 36 chars com hifens
-    expect(id.length).toBe(36);
-    // Published deve conter o mesmo id
-    expect(fakeQueue.published.at(-1)?.object.id).toBe(id);
-  });
+  // Cenário sem Idempotency-Key removido; guard exige header
 
   test('Deposit validações de schema (amount inválido e descrição longa)', async () => {
     const res1 = await request(app.getHttpServer())
-      .post('/transactions/acc-x/deposit')
+      .post(`/transactions/${ULID.ACC3}/deposit`)
       .send({ amount: -1 });
     expect([400, 422]).toContain(res1.statusCode);
 
     const res2 = await request(app.getHttpServer())
-      .post('/transactions/acc-x/deposit')
+      .post(`/transactions/${ULID.ACC3}/deposit`)
       .send({ amount: 1, description: 'a'.repeat(281) });
     expect([400, 422]).toContain(res2.statusCode);
   });
 
   test('Withdraw validações de schema (amount inválido)', async () => {
     const res = await request(app.getHttpServer())
-      .post('/transactions/acc-x/withdraw')
+      .post(`/transactions/${ULID.ACC3}/withdraw`)
       .send({ amount: 0 });
     expect([400, 422]).toContain(res.statusCode);
   });

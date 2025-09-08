@@ -1,8 +1,4 @@
-import {
-  type MiddlewareConsumer,
-  Module,
-  type NestModule,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@/infra/database/database.module';
 import { TransactionController } from './transaction.controller';
 import { DepositUseCase } from './usecases/deposit';
@@ -12,7 +8,6 @@ import { TransferUseCase } from './usecases/transfer';
 import { WithdrawUseCase } from './usecases/withdraw';
 import { QueueModule } from '@/infra/queue/queue.module';
 import { TransactionQueueBootstrap } from './async/queue-bootstrap';
-import { IdempotencyKeyMiddleware } from '@/infra/http/middlewares/idempotency-key.middleware';
 import { AccountLockService } from '@/common/concurrency/account-lock.service';
 import { GetAccountTransactionsUseCase } from './usecases/get-account-transactions';
 import { ProcessBatchAccountTransactionsUseCase } from './usecases/process-batch-account-transactions';
@@ -34,10 +29,4 @@ import { ProcessBatchTransfersUseCase } from './usecases/process-batch-transfers
   ],
   exports: [],
 })
-export class TransactionModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(IdempotencyKeyMiddleware)
-      .forRoutes(TransactionController, TransferController);
-  }
-}
+export class TransactionModule {}

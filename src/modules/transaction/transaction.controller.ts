@@ -8,6 +8,7 @@ import {
   Post,
   Get,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiResponse,
@@ -27,13 +28,13 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { depositDTO, depositSchemaValidation } from './dtos/deposit';
 import { withdrawDTO, withdrawSchemaValidation } from './dtos/withdraw';
 import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-to-queue';
-import { randomUUID } from 'crypto';
 import { QUEUES } from './async/messages';
 import {
   getAccountTransactionsDTO,
   getAccountTransactionsSchemaValidation,
 } from './dtos/get-account-transactions';
 import { GetAccountTransactionsUseCase } from './usecases/get-account-transactions';
+import { IdempotencyKeyGuard } from '@/infra/http/guards/idempotency-key.guard';
 
 @ApiTags('transactions')
 @Controller('transactions/:accountId')
@@ -44,6 +45,7 @@ export class TransactionController {
   ) {}
 
   @Post('deposit')
+  @UseGuards(IdempotencyKeyGuard)
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     summary: 'Depositar',
@@ -62,9 +64,9 @@ export class TransactionController {
   })
   @ApiHeader({
     name: 'idempotency-key',
-    required: false,
-    description: 'Chave para garantir idempotência da operação.',
-    example: 'c0a8016e-6d53-4a9b-9d3f-0b2a4c5f2a11',
+    required: true,
+    description: 'Chave de idempotência (UUID v4).',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @ApiAcceptedResponse({
     description: 'Solicitação enfileirada',
@@ -81,11 +83,11 @@ export class TransactionController {
   async deposit(
     @Param(new ZodValidationPipe(depositSchemaValidation.params))
     param: depositDTO.DepositParamsDTO,
+    @Headers('idempotency-key') idempotencyKey: string,
     @Body(new ZodValidationPipe(depositSchemaValidation.body))
     body: depositDTO.DepositBodyDTO,
-    @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<{ queued: true; id: string; queuedAt: Date }> {
-    const id = idempotencyKey || randomUUID();
+    const id = idempotencyKey;
     await this.queueSender.execute({
       queueName: QUEUES.deposit,
       object: {
@@ -99,6 +101,7 @@ export class TransactionController {
   }
 
   @Post('withdraw')
+  @UseGuards(IdempotencyKeyGuard)
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     summary: 'Sacar',
@@ -117,9 +120,9 @@ export class TransactionController {
   })
   @ApiHeader({
     name: 'idempotency-key',
-    required: false,
-    description: 'Chave para garantir idempotência da operação.',
-    example: 'b6f1a7f8-1a13-4d68-8a9f-9e4caef92af0',
+    required: true,
+    description: 'Chave de idempotência (UUID v4).',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @ApiAcceptedResponse({
     description: 'Solicitação enfileirada',
@@ -136,11 +139,11 @@ export class TransactionController {
   async withdraw(
     @Param(new ZodValidationPipe(withdrawSchemaValidation.params))
     param: withdrawDTO.WithdrawParamsDTO,
+    @Headers('idempotency-key') idempotencyKey: string,
     @Body(new ZodValidationPipe(withdrawSchemaValidation.body))
     body: withdrawDTO.WithdrawBodyDTO,
-    @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<{ queued: true; id: string; queuedAt: Date }> {
-    const id = idempotencyKey || randomUUID();
+    const id = idempotencyKey;
     await this.queueSender.execute({
       queueName: QUEUES.withdraw,
       object: {
@@ -217,10 +220,10 @@ export class TransactionController {
   ): Promise<getAccountTransactionsDTO.GetAccountTransactionsOutput> {
     return this.getAccountTransactionsUseCase.execute({
       accountId: param.accountId,
-      page: (query as any).page,
-      perPage: (query as any).perPage,
-      order: (query as any).order,
-      status: (query as any).status,
-    } as any);
+      page: query.page,
+      perPage: query.perPage,
+      order: query.order,
+      status: query.status,
+    });
   }
 }

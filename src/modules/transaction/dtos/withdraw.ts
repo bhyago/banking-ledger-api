@@ -7,6 +7,14 @@ export const withdrawSchemaValidation = {
   params: z.object({
     accountId: z.string().describe('Identificador ULID da conta.'),
   }),
+  headers: z
+    .object({
+      'idempotency-key': z
+        .string()
+        .uuid()
+        .describe('Chave de idempotência (UUID v4).'),
+    })
+    .passthrough(),
   body: z.object({
     amount: z
       .number()

@@ -3,6 +3,7 @@ import { TransferUseCase } from './transfer';
 import type { AccountTransactionService } from '../services/account-transaction.service';
 import type { ProcessBatchTransfersUseCase } from './process-batch-transfers';
 import { transactionErrors } from '../errors/transaction-errors';
+import { ULID } from 'test/ids';
 
 const makeTxService = () => {
   return {
@@ -28,8 +29,8 @@ describe('TransferUseCase', () => {
 
   it('should call batch for single item and map output', async () => {
     const input = {
-      fromAccountId: 'acc-1',
-      toAccountId: 'acc-2',
+      fromAccountId: ULID.ACC1,
+      toAccountId: ULID.ACC2,
       amount: 150,
       description: 'P2P test',
       id: 'idem-12345678',
@@ -67,8 +68,8 @@ describe('TransferUseCase', () => {
 
   it('should propagate TransferAccountsMustDifferError', async () => {
     const input = {
-      fromAccountId: 'same',
-      toAccountId: 'same',
+      fromAccountId: ULID.ACC1,
+      toAccountId: ULID.ACC1,
       amount: 10,
       id: 'k1',
     } as any;
@@ -83,8 +84,8 @@ describe('TransferUseCase', () => {
 
   it('should propagate InsufficientFundsConsideringCreditLimitError', async () => {
     const input = {
-      fromAccountId: 'acc-a',
-      toAccountId: 'acc-b',
+      fromAccountId: ULID.ACC1,
+      toAccountId: ULID.ACC2,
       amount: 9999,
       id: 'k2',
     } as any;
@@ -113,15 +114,15 @@ describe('TransferUseCase - batch path', () => {
   it('groups by pair and calls batch for multiple items', async () => {
     const items = [
       {
-        fromAccountId: 'acc-a',
-        toAccountId: 'acc-b',
+        fromAccountId: ULID.ACC1,
+        toAccountId: ULID.ACC2,
         amount: 10,
         description: 'x',
         id: 'k1',
       },
       {
-        fromAccountId: 'acc-a',
-        toAccountId: 'acc-b',
+        fromAccountId: ULID.ACC1,
+        toAccountId: ULID.ACC2,
         amount: 20,
         description: 'y',
         id: 'k2',
@@ -155,7 +156,10 @@ describe('TransferUseCase - batch path', () => {
     const res = (await useCase.execute(items)) as any[];
     expect(batch.execute).toHaveBeenCalledOnce();
     expect((batch.execute as any).mock.calls[0][0]).toEqual(
-      expect.objectContaining({ fromAccountId: 'acc-a', toAccountId: 'acc-b' }),
+      expect.objectContaining({
+        fromAccountId: ULID.ACC1,
+        toAccountId: ULID.ACC2,
+      }),
     );
     expect(res).toEqual([
       {

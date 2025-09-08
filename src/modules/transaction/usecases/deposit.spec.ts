@@ -3,6 +3,7 @@ import { DepositUseCase } from './deposit';
 import type { AccountTransactionService } from '../services/account-transaction.service';
 import type { ProcessBatchAccountTransactionsUseCase } from './process-batch-account-transactions';
 import { accountErrors } from '@/modules/account/errors/account-errors';
+import { ULID } from 'test/ids';
 
 const makeTxService = () => {
   return {
@@ -28,20 +29,20 @@ describe('DepositUseCase', () => {
 
   it('should call batch for single item and map the output', async () => {
     const input = {
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       amount: 150.5,
       description: 'Initial deposit',
     } as any;
 
     (batch.execute as any).mockResolvedValueOnce({
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       applied: 1,
       finalBalance: 650.5,
       results: [
         {
           type: 'DEPOSIT',
           transactionId: 'tx-1',
-          accountId: 'acc-1',
+          accountId: ULID.ACC1,
           newBalance: 650.5,
         },
       ],
@@ -53,13 +54,13 @@ describe('DepositUseCase', () => {
     expect(txService.deposit).not.toHaveBeenCalled();
     expect(result).toEqual({
       transactionId: 'tx-1',
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       newBalance: 650.5,
     });
   });
 
   it('should propagate errors from batch executor', async () => {
-    const input = { accountId: 'acc-1', amount: 100 } as any;
+    const input = { accountId: ULID.ACC1, amount: 100 } as any;
     const error = new accountErrors.AccountNotFoundError();
     (batch.execute as any).mockRejectedValueOnce(error);
 
@@ -83,25 +84,25 @@ describe('DepositUseCase - batch path', () => {
 
   it('groups by account and calls batch for multiple items', async () => {
     const items = [
-      { accountId: 'acc-1', amount: 100, description: 'a' },
-      { accountId: 'acc-1', amount: 50, description: 'b' },
+      { accountId: ULID.ACC1, amount: 100, description: 'a' },
+      { accountId: ULID.ACC1, amount: 50, description: 'b' },
     ] as any;
 
     (batch.execute as any).mockResolvedValueOnce({
-      accountId: 'acc-1',
+      accountId: ULID.ACC1,
       applied: 2,
       finalBalance: 150,
       results: [
         {
           type: 'DEPOSIT',
           transactionId: 'tx-1',
-          accountId: 'acc-1',
+          accountId: ULID.ACC1,
           newBalance: 100,
         },
         {
           type: 'DEPOSIT',
           transactionId: 'tx-2',
-          accountId: 'acc-1',
+          accountId: ULID.ACC1,
           newBalance: 150,
         },
       ],
@@ -110,8 +111,8 @@ describe('DepositUseCase - batch path', () => {
     const res = (await useCase.execute(items)) as any[];
     expect(batch.execute).toHaveBeenCalledOnce();
     expect(res).toEqual([
-      { transactionId: 'tx-1', accountId: 'acc-1', newBalance: 100 },
-      { transactionId: 'tx-2', accountId: 'acc-1', newBalance: 150 },
+      { transactionId: 'tx-1', accountId: ULID.ACC1, newBalance: 100 },
+      { transactionId: 'tx-2', accountId: ULID.ACC1, newBalance: 150 },
     ]);
   });
 });

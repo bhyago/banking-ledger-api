@@ -8,6 +8,7 @@ import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-t
 import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
 import { FakeConsumeQueue, FakeSendQueue } from '../fakes/fake-queue';
 import { QUEUES } from '@/modules/transaction/async/messages';
+import { ULID } from 'test/ids';
 
 describe('Transfer HTTP (E2E)', () => {
   let app: INestApplication;
@@ -41,25 +42,28 @@ describe('Transfer HTTP (E2E)', () => {
   test('[POST] /transfer enfileira e retorna 202', async () => {
     const res = await request(app.getHttpServer())
       .post('/transfer')
-      .set('Idempotency-Key', 'idemp-tr-1')
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440016')
       .send({
-        fromAccountId: 'A',
-        toAccountId: 'B',
+        fromAccountId: ULID.ACC1,
+        toAccountId: ULID.ACC2,
         amount: 10,
         description: 'x',
       });
 
     expect(res.statusCode).toBe(202);
     expect(res.body).toEqual(
-      expect.objectContaining({ queued: true, id: 'idemp-tr-1' }),
+      expect.objectContaining({
+        queued: true,
+        id: '550e8400-e29b-41d4-a716-446655440016',
+      }),
     );
     expect(fakeQueue.published.at(-1)).toEqual(
       expect.objectContaining({
         queueName: QUEUES.transfer,
         object: expect.objectContaining({
-          id: 'idemp-tr-1',
-          fromAccountId: 'A',
-          toAccountId: 'B',
+          id: '550e8400-e29b-41d4-a716-446655440016',
+          fromAccountId: ULID.ACC1,
+          toAccountId: ULID.ACC2,
           amount: 10,
           description: 'x',
         }),
@@ -75,16 +79,5 @@ describe('Transfer HTTP (E2E)', () => {
     expect([400, 422]).toContain(res.statusCode);
   });
 
-  test('Transfer sem Idempotency-Key gera id e retorna 202', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/transfer')
-      .send({ fromAccountId: 'X', toAccountId: 'Y', amount: 2 });
-
-    expect(res.statusCode).toBe(202);
-    expect(res.body.queued).toBe(true);
-    const id: string = res.body.id;
-    expect(typeof id).toBe('string');
-    expect(id.length).toBe(36);
-    expect(fakeQueue.published.at(-1)?.object.id).toBe(id);
-  });
+  // Cenário sem Idempotency-Key removido; guard exige header
 });

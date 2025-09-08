@@ -7,8 +7,9 @@ export const createAccountSchemaValidation = {
     creditLimit: z
       .number()
       .min(0)
-      .optional()
       .describe('Limite de crédito inicial. Padrão: 0.'),
+    fullName: z.string().min(3).max(120).describe('Nome completo do titular.'),
+    cpf: z.string().describe('CPF do titular'),
   }),
   response: z.object({
     accountId: z.string().describe('Identificador ULID da conta criada.'),

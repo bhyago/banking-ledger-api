@@ -8,6 +8,7 @@ import { SendMessageToQueueProvider } from '@/contracts/rabbit-mq/send-message-t
 import { FakeConsumeQueue, FakeSendQueue } from '../../fakes/fake-queue';
 import { ConsumeMessageFromQueueProvider } from '@/contracts/rabbit-mq/consume-message-from-queue';
 import { QUEUES } from '@/modules/transaction/async/messages';
+import { ULID } from 'test/ids';
 import { TransferUseCase } from '@/modules/transaction/usecases/transfer';
 import { transactionErrors } from '@/modules/transaction/errors/transaction-errors';
 
@@ -37,9 +38,9 @@ describe('Transfer HTTP + Processing Concurrency (E2E-DB)', () => {
   });
 
   test('Two concurrent transfers from same account serialize; only one succeeds', async () => {
-    const fromId = 'acc-001'; // seeded with 100.00
-    const to1Id = 'acc-002';
-    const to2Id = 'acc-003';
+    const fromId = ULID.ACC1; // seeded with 100.00
+    const to1Id = ULID.ACC2;
+    const to2Id = ULID.ACC3;
 
     const fromBefore = await prisma.account.findUnique({
       where: { id: fromId },
@@ -49,11 +50,11 @@ describe('Transfer HTTP + Processing Concurrency (E2E-DB)', () => {
 
     const r1 = request(app.getHttpServer())
       .post('/transfer')
-      .set('Idempotency-Key', 'e2e-conc-1')
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440014')
       .send({ fromAccountId: fromId, toAccountId: to1Id, amount: 70 });
     const r2 = request(app.getHttpServer())
       .post('/transfer')
-      .set('Idempotency-Key', 'e2e-conc-2')
+      .set('Idempotency-Key', '550e8400-e29b-41d4-a716-446655440015')
       .send({ fromAccountId: fromId, toAccountId: to2Id, amount: 70 });
 
     const [res1, res2] = await Promise.all([r1, r2]);

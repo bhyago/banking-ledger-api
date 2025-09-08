@@ -29,8 +29,8 @@ describe('Batch processing + DB (E2E)', () => {
   let prisma: PrismaService;
   let batchQueue: BatchQueue;
 
-  const acc = 'acc-batch-1';
-  const acc2 = 'acc-batch-2';
+  const acc = '01J9MZ3ZYK2J4TN2YCE2V7ZVD1';
+  const acc2 = '01J9MZ3ZYK2J4TN2YCE2V7ZVD2';
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -81,8 +81,12 @@ describe('Batch processing + DB (E2E)', () => {
   test('Deposits em lote (10 itens) aplicam saldo e criam 10 transações', async () => {
     // Enfileira 10 depósitos de 1.23
     for (let i = 0; i < 10; i++) {
+      const key = `550e8400-e29b-41d4-a716-44665544${(100 + i)
+        .toString()
+        .slice(1)}`;
       await request(app.getHttpServer())
         .post(`/transactions/${acc}/deposit`)
+        .set('Idempotency-Key', key)
         .send({ amount: 1.23, description: `d${i}` })
         .expect(202);
     }
@@ -112,8 +116,12 @@ describe('Batch processing + DB (E2E)', () => {
   test('Deposits em múltiplos lotes (flushInChunks)', async () => {
     // Enfileira 25 depósitos de 2.00 na mesma conta
     for (let i = 0; i < 25; i++) {
+      const key = `550e8400-e29b-41d4-a716-44665544${(200 + i)
+        .toString()
+        .slice(1)}`;
       await request(app.getHttpServer())
         .post(`/transactions/${acc2}/deposit`)
+        .set('Idempotency-Key', key)
         .send({ amount: 2.0, description: `chunk-${i}` })
         .expect(202);
     }

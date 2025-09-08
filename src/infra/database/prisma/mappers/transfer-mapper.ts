@@ -20,6 +20,7 @@ export class PrismaTransferMapper {
 
   static toPrisma(entity: Transfer): Prisma.TransferUncheckedCreateInput {
     return {
+      id: entity.id.toValue(),
       fromAccountId: entity.fromAccountId.toValue(),
       toAccountId: entity.toAccountId.toValue(),
       amountCents: BigInt(Math.round(entity.amount * 100)),

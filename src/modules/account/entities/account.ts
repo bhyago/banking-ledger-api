@@ -6,6 +6,8 @@ export interface AccountProps {
   number: string;
   creditLimit: number;
   balance: number;
+  fullName: string | null;
+  cpf: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -36,6 +38,8 @@ export class Account extends Entity<AccountProps> {
         number: generateAccountNumberFromId(id ?? new UniqueEntityID()),
         balance: 0,
         creditLimit: 0,
+        fullName: null,
+        cpf: null,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
@@ -76,6 +80,22 @@ export class Account extends Entity<AccountProps> {
 
   set balance(value: number) {
     this.props.balance = value;
+    this.touch();
+  }
+
+  get fullName(): string | null {
+    return this.props.fullName;
+  }
+  set fullName(value: string | null) {
+    this.props.fullName = value;
+    this.touch();
+  }
+
+  get cpf(): string | null {
+    return this.props.cpf;
+  }
+  set cpf(value: string | null) {
+    this.props.cpf = value;
     this.touch();
   }
 

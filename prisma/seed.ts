@@ -9,16 +9,22 @@ async function main() {
   const accounts = [
     {
       number: '100001',
+      fullName: 'Alice Example',
+      cpf: '12345678901',
       balanceCents: 100_00n,
       creditLimitCents: 0n,
     },
     {
       number: '100002',
+      fullName: 'Bob Example',
+      cpf: '98765432100',
       balanceCents: 500_00n,
       creditLimitCents: 200_00n,
     },
     {
       number: '100003',
+      fullName: 'Carol Example',
+      cpf: '11122233344',
       balanceCents: 0n,
       creditLimitCents: 1_000_00n,
     },
@@ -31,10 +37,14 @@ async function main() {
       update: {
         balanceCents: a.balanceCents,
         creditLimitCents: a.creditLimitCents,
+        fullName: a.fullName,
+        cpf: a.cpf,
       },
       create: {
         id: ulid(),
         number: a.number,
+        fullName: a.fullName,
+        cpf: a.cpf,
         balanceCents: a.balanceCents,
         creditLimitCents: a.creditLimitCents,
         createdAt: now,
