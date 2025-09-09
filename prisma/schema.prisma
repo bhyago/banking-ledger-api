@@ -11,3 +11,109 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Account {
+  id               String    @id @default(ulid())
+  number           String    @unique
+  balanceCents     BigInt    @default(0) @map("balance_cents") @db.BigInt
+  creditLimitCents BigInt    @default(0) @map("credit_limit_cents") @db.BigInt
+  fullName         String?   @map("full_name") @db.VarChar(120)
+  cpf              String?   @db.VarChar(11)
+  createdAt        DateTime  @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+
+  transactions  Transaction[]
+  ledger        LedgerEntry[]
+  transfersFrom Transfer[]    @relation("FromAccount")
+  transfersTo   Transfer[]    @relation("ToAccount")
+
+  @@index([id], name: "idx_account_id")
+  @@map("account")
+}
+
+model FeePolicy {
+  id              String          @id @default(ulid())
+  transactionType TransactionType @map("transaction_type")
+  flatFeeCents    BigInt          @default(0) @map("flat_fee_cents") @db.BigInt
+  percentBps      Int             @default(0) @map("percent_bps")
+  startsAt        DateTime        @map("starts_at") @db.Timestamptz
+  endsAt          DateTime        @map("ends_at") @db.Timestamptz
+
+  @@index([transactionType, startsAt, endsAt], name: "idx_fee_tx_type_range")
+  @@map("fee_policy")
+}
+
+model LedgerEntry {
+  id                String   @id @default(ulid())
+  accountId         String   @map("account_id")
+  account           Account  @relation(fields: [accountId], references: [id])
+  transactionId     String?  @map("transaction_id")
+  transferId        String?  @map("transfer_id")
+  debitCents        BigInt   @default(0) @map("debit_cents") @db.BigInt
+  creditCents       BigInt   @default(0) @map("credit_cents") @db.BigInt
+  balanceAfterCents BigInt   @map("balance_after_cents") @db.BigInt
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  transfer    Transfer?    @relation(fields: [transferId], references: [id])
+
+  @@index([accountId, createdAt], name: "idx_ledger_account_created_at")
+  @@map("ledger_entry")
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  APPLIED
+  REJECTED
+}
+
+enum TransferStatus {
+  PENDING
+  APPLIED
+  REJECTED
+}
+
+model Transaction {
+  id               String            @id @default(ulid())
+  accountId        String            @map("account_id")
+  account          Account           @relation(fields: [accountId], references: [id])
+  type             TransactionType
+  amountCents      BigInt            @map("amount_cents") @db.BigInt
+  feeCents         BigInt            @default(0) @map("fee_cents") @db.BigInt
+  description      String?           @db.VarChar(280)
+  relatedAccountId String?           @map("related_account_id")
+  status           TransactionStatus @default(PENDING)
+  transferId       String?           @map("transfer_id")
+  idempotencyKey   String?           @map("idempotency_key") @db.Uuid
+  createdAt        DateTime          @map("created_at") @db.Timestamptz
+
+  ledger LedgerEntry[]
+
+  @@unique([type, idempotencyKey], name: "uniq_tx_type_idemp")
+  @@index([accountId, createdAt(sort: Desc)], name: "idx_tx_account_created_at_desc")
+  @@map("transaction")
+}
+
+model Transfer {
+  id             String         @id @default(ulid())
+  fromAccountId  String         @map("from_account_id")
+  toAccountId    String         @map("to_account_id")
+  fromAccount    Account        @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccount      Account        @relation("ToAccount", fields: [toAccountId], references: [id])
+  amountCents    BigInt         @map("amount_cents") @db.BigInt
+  feeFromCents   BigInt         @default(0) @map("fee_from_cents") @db.BigInt
+  status         TransferStatus @default(PENDING)
+  idempotencyKey String         @unique @map("idempotency_key") @db.Uuid
+  createdAt      DateTime       @map("created_at") @db.Timestamptz
+
+  ledger LedgerEntry[]
+
+  @@map("transfer")
+}
