@@ -114,7 +114,24 @@ Nota sobre workers e eventos
 - Gerar cliente e aplicar migrações:
   - `pnpm prisma:generate && pnpm prisma:migrate`
 - Popular base com seeds (contas com CPF/nome e políticas de tarifa):
+
   - `pnpm prisma:seed`
+
+  3.1. Novo Banco (passo a passo Prisma)
+
+- Pré‑requisito: configure `DATABASE_URL` em `.env` apontando para um DB vazio/acessível.
+- Via scripts (pnpm):
+  - `pnpm prisma:generate` – gera o Prisma Client.
+  - `pnpm prisma:migrate` – aplica migrações (`prisma migrate dev`).
+  - `pnpm prisma:seed` – popula dados iniciais.
+- Via npx (alternativa equivalente):
+  - `npx prisma generate`
+  - `npx prisma migrate dev`
+  - `npx prisma db seed`
+- Em caso de falha nas migrações (ex.: estado inconsistente do schema):
+  - `npx prisma migrate reset --force --skip-seed`
+  - Em seguida, rode novamente as migrações e (se necessário) o seed:
+    - `npx prisma migrate dev` e depois `npx prisma db seed`
 
 IMPORTANTE
 
@@ -135,10 +152,12 @@ IMPORTANTE
   - `QUEUE_SERVER_URL=amqp://rabbitmq:rabbitmq@localhost:5672`
 - `.env.test` (E2E com DB): use `localhost` também; o DB `banking-ledger-test` precisa existir. Você pode criá-lo conectando no Postgres e executando `CREATE DATABASE "banking-ledger-test";` ou ajustar a URL para reutilizar `banking-ledger` durante o desenvolvimento.
 
-Scripts úteis (pnpm)
+Scripts úteis (pnpm / npx)
 
-- `pnpm db:migrate` – `prisma generate` + `prisma migrate dev`.
-- `pnpm db:seed` – executa o seed do Prisma.
+- `pnpm prisma:generate` – gera o Prisma Client (`npx prisma generate`).
+- `pnpm prisma:migrate` – aplica migrações (`npx prisma migrate dev`).
+- `pnpm prisma:seed` – roda o seed (`npx prisma db seed`).
+- `pnpm prisma:push` – sincroniza schema sem migrações (dev) (`npx prisma db push`).
 
 Dependências locais
 
